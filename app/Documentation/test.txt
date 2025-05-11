@@ -1,0 +1,7 @@
+Current bottlenecks.
+
+DNS resolution
+
+TCP connection establishment (TLS handshake included)
+
+Server response latency
