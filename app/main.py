@@ -20,10 +20,11 @@ async def main():
     """
 
     start_time = time.time()
-
     domains = get_links(PARQUET_PATH)
     resolved_ips = await resolve_all_domains(domains)
-    print(resolved_ips)
+    if resolved_ips:
+        print("Resolved IPs provided.")
+
     print("---%s seconds---" % (time.time() - start_time))
 
     # print(scrape_result)

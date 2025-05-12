@@ -2,7 +2,8 @@ import asyncio
 import httpx 
 import multiprocessing
 import random
-from typing import Dict, Any
+from typing import Dict, Any, Optional, List
+from urllib.parse import urlparse 
 
 user_agents = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36",
@@ -40,14 +41,8 @@ accept_languages = [
     "sv-SE,sv;q=0.9,en-US;q=0.8,en;q=0.7"
 ]
 
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
-}
 
-LIMITS = httpx.Limits (
-    max_connections=1000,
-    max_keepalive_connections=100
-)
+
 
 def headers_randomizer(domain: str) -> Dict[str, str]:
     return {
@@ -56,38 +51,110 @@ def headers_randomizer(domain: str) -> Dict[str, str]:
         "Host": domain,
     }
 
-async def scrape_html(links):    
+async def fetch_and_retry(client: httpx.AsyncClient, domain: str, ip: Optional[str], max_retries: int = 3) -> Dict[str, Any]:
+    """
+    Fetch a single domain with retry logic.
+    """
+    if not domain.startswith("http://", "https://"):
+        next_link = [f"https://{domain}", f"http://{domain}"]
+    else:
+        next_link = [domain]
+    
+    res_object = {
+        "domain": domain,
+        "success": False,
+        "status_code": None,
+        "html": None,
+        'error': None,
+        "url": None
+    }
+    
+    for attempt in range(max_retries):
+        for link in next_link:
+            try:
+                parsed_link = urlparse(link)
+                domain = parsed_link.netloc or parsed_link.path
+                headers = headers_randomizer(domain)
+
+                if ip:
+                    # Use IP directly if provided.
+                    if link.startswith("https://"):
+                        modified_link = link
+                        headers["Host"] = domain
+                    else:
+                        modified_link = link.replace(domain, ip)
+                        # For HTTP we can use IPv4 directly instead of hostname.
+                else:
+                    modified_link = link
+                
+                req = await client.get(
+                    modified_link,
+                    headers=headers,
+                    timeout=20
+                )
+
+                if req.status_code == 200:
+                    res_object["success"] = True,
+                    res_object["status_code"] = req.status_code,
+                    res_object["html"] = req.text
+                    res_object["url"] = req.url
+                    return res_object
+                if req.status_code in (301, 302, 307, 308) and "location" in req.headers:
+                    redirect_link = req.headers["location"]
+                    if redirect_link.startswith("http://", "https://"):
+                        next_link.append(redirect_link)
+
+                res_object["status_code"] = req.status_code
+
+
+
+            except httpx.ConnectTimeout:
+                res_object["error"] = "Connection timeout."
+                continue
+
+            
+            except Exception as e:
+                res_object["error"] = "Unexpected error fetching HTML."
+        if attempt < max_retries - 1:
+            await asyncio.sleep(attempt + 1)
+    
+    return res_object
+
+
+async def scrape_html(resolved_links: List[Dict[str, Any]]) -> List[Dict[Any, str]]:    
 
     """
     Async HTML scraper from a list of links.
     
     Params:
-        links: list of links.
+        links: list of resolved domains.
     
     Returns:
         List of dictionaries containing each website's response as an object.
     """
+    concurrency = 1000
+    keepalive = 100
 
-    domain = links["domain"]
-    resolved_ip = links["resolved_ip"]
+    if not resolved_links:
+        return []
+    
+    print(f"Starting scraper. (Concurrency: {concurrency})")
+    limits = httpx.Limits(
+        max_connections=concurrency,
+        max_keepalive_connections=keepalive
+    )
 
-    if links:
-        print("Links received.")
+    semaphore = asyncio.Semaphore(concurrency)
+    res = []
+    async with httpx.AsyncClient(
+        verify=False,
+        follow_redirects=True,
+        limits=limits,
+        timeout=20
+    ) as async_client:
+        
+        async def bounded_fetch()
 
-    # Improve error handling.
+    
 
-    async with httpx.AsyncClient(verify=False, follow_redirects=True, limits=LIMITS, timeout=20) as client:
 
-        reqs = [client.get(
-            link, 
-            timeout=20,
-            headers={
-                "Host": links["domain"]
-                
-                }
-            ) for link in links["resolved_ip"]]
-        results = await asyncio.gather(*reqs, return_exceptions=True)
-
-    return results
-
-# async def fetch_retry():
