@@ -9,7 +9,7 @@ def extract_logo(domain: str, html: str) -> str | None:
             soup.find("img", id=lambda v: v and "logo" in v.lower())
         )
         if img and img.get("src"):
-            return urljoin(f"http://{domain}", img["src"])
+            return urljoin(f"{domain}", img["src"])
     except:
         print(f"Error parsing HTMl on domain {domain}.")
     return None
