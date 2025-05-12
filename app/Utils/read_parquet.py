@@ -2,18 +2,27 @@ import pandas as pd
 import socket
 
 def get_links(path):
-    domains = pd.read_parquet(path)["domain"].dropna().tolist()
-    # links = ["http://" + domain for domain in domains]
-    links = []
+    """
+        This fetches the links from a .parquet file.
+        Args:
+            path: .parquet file path.
+    """
 
-    for domain in domains:
-        try:
-            resolved_ip = socket.gethostbyname(domain)
-            links.append({"domain": domain, "resolved_ip": resolved_ip})
-        except socket.gaierror:
-            print("Error resolving DNS.")
-            continue
-        
-    return links
+    try:
+        links = pd.read_parquet(path)["domain"].dropna().tolist()
+        res = []
+
+        for link in links:
+            if isinstance(link, str) and '.' in link:
+                res.append(link)
+                # Ensuring domains are valid. 
+
+        return res
+    except Exception as e:
+        print(f"Error loading links from .parquet file. Error: {e}")
+        return []
+
+
+
 
 

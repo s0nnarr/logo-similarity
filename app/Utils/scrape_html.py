@@ -2,6 +2,7 @@ import asyncio
 import httpx 
 import multiprocessing
 import random
+from typing import Dict, Any
 
 user_agents = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36",
@@ -48,7 +49,7 @@ LIMITS = httpx.Limits (
     max_keepalive_connections=100
 )
 
-def headers_randomizer(domain):
+def headers_randomizer(domain: str) -> Dict[str, str]:
     return {
         "User-Agent" : random.choice(user_agents),
         "Accept-Language": random.choice(accept_languages),
