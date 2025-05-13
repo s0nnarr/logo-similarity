@@ -10,7 +10,8 @@ from Utils.create_output_file import create_output
 """ Global declarations. """
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PARQUET_PATH = os.path.join(BASE_DIR, "Data\\logos.snappy.parquet")
+PARQUET_PATH = os.path.join(BASE_DIR, "Data/logos.snappy.parquet")
+OUTPUT_PATH = os.path.join(BASE_DIR, "Output/resolved_links.txt")
 
 links = []
 resolved_ips = []
@@ -24,15 +25,20 @@ async def main():
     start_time = time.time()
     domains = get_links(PARQUET_PATH)
     resolved_ips = await resolve_all_domains(domains)
-
+    counter = 1
+  
     if resolved_ips:
         print("Resolved IPs loaded.")
         # Locally caching to a file.
-        create_output(resolved_ips)
+        create_output(resolved_ips, OUTPUT_PATH)
+        for ip in resolved_ips:
+            counter += 1
+        print(counter)
+
     
 
-    html_contents = await scrape_html(resolved_ips)
-    print(html_contents)
+    # html_contents = await scrape_html(resolved_ips)
+    # print(html_contents)
     print("---%s seconds---" % (time.time() - start_time))
 
     # print(scrape_result)
