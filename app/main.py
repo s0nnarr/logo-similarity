@@ -8,6 +8,7 @@ from Utils.domain_resolver import resolve_all_domains
 from Utils.scrape_html import scrape_html
 from Utils.outputter import create_output
 from Utils.parse_html import extract_site_logo
+from Utils.download_images import image_downloader
 
 """ Global declarations. """
 

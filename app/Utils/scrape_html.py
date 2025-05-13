@@ -146,7 +146,7 @@ async def scrape_html(resolved_links: List[Dict[str, Any]]) -> List[Dict[Any, st
 
     semaphore = asyncio.Semaphore(concurrency)
     res = []
-    successes = 0
+   
     async with httpx.AsyncClient(
         verify=False,
         follow_redirects=True,
