@@ -1,34 +1,48 @@
 import time
 import os
 import asyncio
+import json
 
 from Utils.read_parquet import get_links
 from Utils.domain_resolver import resolve_all_domains
 from Utils.scrape_html import scrape_html
-from Utils.create_output_file import create_output
+from Utils.outputter import create_output
+from Utils.parse_html import extract_site_logo
 
 """ Global declarations. """
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PARQUET_PATH = os.path.join(BASE_DIR, "Data\\logos.snappy.parquet")
-OUTPUT_PATH = os.path.join(BASE_DIR, "Output\\resolved_links.txt")
+OUTPUT_PATH = os.path.join(BASE_DIR, "Output\\resolved_links.json")
 
 links = []
 resolved_ips = []
+domain_logos = []
 
 async def main():
     
     """
-    Main script/Orchestrator that starts the program.
+
+    Main script / Orchestrator that starts the program.
+    
     """
 
     start_time = time.time()
-    domains = get_links(PARQUET_PATH)
-    print("Length of domains: ")
-    print(len(domains))
-    resolved_ips = await resolve_all_domains(domains)
+
+    if os.path.exists(OUTPUT_PATH):
+        with open(OUTPUT_PATH, "r") as f:
+            resolved_ips = json.load(f) 
+            print("Loaded resolved links from .json file.")
+            # Fetching already resolved domains.
+        f.close()
+    else:
+
+        domains = get_links(PARQUET_PATH)
+        print("Length of domains: ")
+        print(len(domains))
+        resolved_ips = await resolve_all_domains(domains[:50])
+    
     counter = 1
-  
     if resolved_ips:
         print("Resolved IPs loaded.")
         # Locally caching to a file.
@@ -38,14 +52,18 @@ async def main():
         print(counter)
 
     
-
+    # Parse
     html_contents = await scrape_html(resolved_ips)
-    # print(html_contents)
+
+    logo_tasks = [extract_site_logo(res_object) for res_object in html_contents]
+    logo_results = await asyncio.gather(*(logo_tasks))
+    domain_logos = [result for result in logo_results if result is not None]  
+    print(domain_logos)            
+  
     print("---%s seconds---" % (time.time() - start_time))
 
 
 if __name__ == "__main__":
-    # asyncio.run(main())
     asyncio.set_event_loop(asyncio.new_event_loop())
     loop = asyncio.get_event_loop()
     res = loop.run_until_complete(main())
