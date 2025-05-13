@@ -146,7 +146,7 @@ async def scrape_html(resolved_links: List[Dict[str, Any]]) -> List[Dict[Any, st
 
     semaphore = asyncio.Semaphore(concurrency)
     res = []
-
+    successes = 0
     async with httpx.AsyncClient(
         verify=False,
         follow_redirects=True,
@@ -167,6 +167,7 @@ async def scrape_html(resolved_links: List[Dict[str, Any]]) -> List[Dict[Any, st
             completed_batch = [bounded_fetch(resolved_link_pair) for resolved_link_pair in batch]
             batch_results = await asyncio.gather(*(completed_batch))
             res.extend(batch_results)
+            print(f"Finished batch {i} {batch_size}")
             
             await asyncio.sleep(0.4)
 

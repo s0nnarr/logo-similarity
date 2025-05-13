@@ -10,8 +10,8 @@ from Utils.create_output_file import create_output
 """ Global declarations. """
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PARQUET_PATH = os.path.join(BASE_DIR, "Data/logos.snappy.parquet")
-OUTPUT_PATH = os.path.join(BASE_DIR, "Output/resolved_links.txt")
+PARQUET_PATH = os.path.join(BASE_DIR, "Data\\logos.snappy.parquet")
+OUTPUT_PATH = os.path.join(BASE_DIR, "Output\\resolved_links.txt")
 
 links = []
 resolved_ips = []
@@ -24,6 +24,8 @@ async def main():
 
     start_time = time.time()
     domains = get_links(PARQUET_PATH)
+    print("Length of domains: ")
+    print(len(domains))
     resolved_ips = await resolve_all_domains(domains)
     counter = 1
   
@@ -37,11 +39,10 @@ async def main():
 
     
 
-    # html_contents = await scrape_html(resolved_ips)
+    html_contents = await scrape_html(resolved_ips)
     # print(html_contents)
     print("---%s seconds---" % (time.time() - start_time))
 
-    # print(scrape_result)
 
 if __name__ == "__main__":
     # asyncio.run(main())
