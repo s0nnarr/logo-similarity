@@ -4,6 +4,8 @@ import asyncio
 
 from Utils.read_parquet import get_links
 from Utils.domain_resolver import resolve_all_domains
+from Utils.scrape_html import scrape_html
+from Utils.create_output_file import create_output
 
 """ Global declarations. """
 
@@ -22,9 +24,15 @@ async def main():
     start_time = time.time()
     domains = get_links(PARQUET_PATH)
     resolved_ips = await resolve_all_domains(domains)
-    if resolved_ips:
-        print("Resolved IPs provided.")
 
+    if resolved_ips:
+        print("Resolved IPs loaded.")
+        # Locally caching to a file.
+        create_output(resolved_ips)
+    
+
+    html_contents = await scrape_html(resolved_ips)
+    print(html_contents)
     print("---%s seconds---" % (time.time() - start_time))
 
     # print(scrape_result)

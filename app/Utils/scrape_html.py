@@ -55,7 +55,7 @@ async def fetch_and_retry(client: httpx.AsyncClient, domain: str, ip: Optional[s
     """
     Fetch a single domain with retry logic.
     """
-    if not domain.startswith("http://", "https://"):
+    if not domain.startswith(("http://", "https://")):
         next_link = [f"https://{domain}", f"http://{domain}"]
     else:
         next_link = [domain]
@@ -99,13 +99,13 @@ async def fetch_and_retry(client: httpx.AsyncClient, domain: str, ip: Optional[s
                     res_object["html"] = req.text
                     res_object["url"] = req.url
                     return res_object
+                
                 if req.status_code in (301, 302, 307, 308) and "location" in req.headers:
                     redirect_link = req.headers["location"]
                     if redirect_link.startswith("http://", "https://"):
                         next_link.append(redirect_link)
 
                 res_object["status_code"] = req.status_code
-
 
 
             except httpx.ConnectTimeout:
@@ -146,6 +146,7 @@ async def scrape_html(resolved_links: List[Dict[str, Any]]) -> List[Dict[Any, st
 
     semaphore = asyncio.Semaphore(concurrency)
     res = []
+
     async with httpx.AsyncClient(
         verify=False,
         follow_redirects=True,
@@ -153,7 +154,26 @@ async def scrape_html(resolved_links: List[Dict[str, Any]]) -> List[Dict[Any, st
         timeout=20
     ) as async_client:
         
-        async def bounded_fetch()
+        async def bounded_fetch(resolved_link_pair: Dict[str, Any]) -> Dict[str, Any]:
+            async with semaphore:
+                domain = resolved_link_pair["domain"]
+                resolved_ip = resolved_link_pair["resolved_ip"]
+                await asyncio.sleep(0.2)
+                return await fetch_and_retry(async_client, domain, resolved_ip)
+        
+        batch_size = 500
+        for i in range(0, len(resolved_links), batch_size):
+            batch = resolved_links[i:i+batch_size]
+            completed_batch = [bounded_fetch(resolved_link_pair) for resolved_link_pair in batch]
+            batch_results = await asyncio.gather(*(completed_batch))
+            res.extend(batch_results)
+            
+            await asyncio.sleep(0.4)
+
+    return res
+
+            
+
 
     
 
