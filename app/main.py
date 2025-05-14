@@ -10,11 +10,8 @@ from Utils.outputter import create_output
 from Utils.parse_html import extract_site_logo
 from Utils.download_images import image_downloader
 
-""" Global declarations. """
+from config import * # Global declarations.
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PARQUET_PATH = os.path.join(BASE_DIR, "Data\\logos.snappy.parquet")
-OUTPUT_PATH = os.path.join(BASE_DIR, "Output\\resolved_links.json")
 
 links = []
 resolved_ips = []
@@ -30,8 +27,8 @@ async def main():
 
     start_time = time.time()
 
-    if os.path.exists(OUTPUT_PATH):
-        with open(OUTPUT_PATH, "r") as f:
+    if os.path.exists(JSON_PATH):
+        with open(JSON_PATH, "r") as f:
             resolved_ips = json.load(f) 
             print("Loaded resolved links from .json file.")
             # Fetching already resolved domains.
@@ -45,22 +42,22 @@ async def main():
     
     counter = 1
     if resolved_ips:
-        print("Resolved IPs loaded.")
-        # Locally caching to a file.
-        create_output(resolved_ips, OUTPUT_PATH)
+        create_output(resolved_ips, JSON_PATH)
         for ip in resolved_ips:
             counter += 1
         print(counter)
 
-    
     # Parse
     html_contents = await scrape_html(resolved_ips)
 
     logo_tasks = [extract_site_logo(res_object) for res_object in html_contents]
     logo_results = await asyncio.gather(*(logo_tasks))
     domain_logos = [result for result in logo_results if result is not None]  
-    print(domain_logos)            
-  
+    
+    print(domain_logos) 
+    print(f"Found {len(domain_logos)} logos.")         
+ 
+    downloaded_logos = await image_downloader(domain_logos, IMG_PATH)
     print("---%s seconds---" % (time.time() - start_time))
 
 
