@@ -36,10 +36,9 @@ async def main():
     else:
 
         domains = get_links(PARQUET_PATH)
-        print("Length of domains: ")
-        print(len(domains))
+        print("Number of links: ", len(domains))
         resolved_ips = await resolve_all_domains(domains[:50])
-    
+        print(resolved_ips)
     counter = 1
     if resolved_ips:
         create_output(resolved_ips, JSON_PATH)
@@ -47,17 +46,18 @@ async def main():
             counter += 1
         print(counter)
 
+    print(resolved_ips[:50])
     # Parse
-    html_contents = await scrape_html(resolved_ips)
+    # html_contents = await scrape_html(resolved_ips)
 
-    logo_tasks = [extract_site_logo(res_object) for res_object in html_contents]
-    logo_results = await asyncio.gather(*(logo_tasks))
-    domain_logos = [result for result in logo_results if result is not None]  
+    # logo_tasks = [extract_site_logo(res_object) for res_object in html_contents]
+    # logo_results = await asyncio.gather(*(logo_tasks))
+    # domain_logos = [result for result in logo_results if result is not None]  
     
-    print(domain_logos) 
-    print(f"Found {len(domain_logos)} logos.")         
+    # print(domain_logos) 
+    # print(f"Found {len(domain_logos)} logos.")         
  
-    downloaded_logos = await image_downloader(domain_logos, IMG_PATH)
+    # downloaded_logos = await image_downloader(domain_logos, IMG_PATH)
     print("---%s seconds---" % (time.time() - start_time))
 
 

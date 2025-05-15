@@ -5,16 +5,10 @@ import random
 from typing import Dict, Any, Optional, List
 from urllib.parse import urlparse 
 
-from config import user_agents, accept_languages
+from Utils.headers import headers_randomizer
 
 
 
-def headers_randomizer(domain: str) -> Dict[str, str]:
-    return {
-        "User-Agent" : random.choice(user_agents),
-        "Accept-Language": random.choice(accept_languages),
-        "Host": domain,
-    }
 
 async def fetch_and_retry(client: httpx.AsyncClient, domain: str, ip: Optional[str], max_retries: int = 3) -> Dict[str, Any]:
     """
@@ -33,13 +27,14 @@ async def fetch_and_retry(client: httpx.AsyncClient, domain: str, ip: Optional[s
         'error': None,
         "url": None
     }
+ 
     
     for attempt in range(max_retries):
         for link in next_link:
             try:
+                headers = headers_randomizer(domain)
                 parsed_link = urlparse(link)
                 domain = parsed_link.netloc or parsed_link.path
-                headers = headers_randomizer(domain)
 
                 if ip:
                     # Use IP directly if provided.

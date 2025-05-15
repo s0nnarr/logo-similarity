@@ -1,24 +1,20 @@
 from urllib.parse import urlparse, urljoin
+import urllib.parse
 from PIL import Image 
 from io import BytesIO
 from typing import List, Dict
 
-from Utils.scrape_html import headers_randomizer
+from Utils.headers import headers_randomizer
 
 import hashlib
 import aiohttp
 import os
 import asyncio
+import re
+import base64
 import logging
-import cairosvg
 
-# common_paths = [
-#             '/logo.png', '/logo.jpg', '/logo.svg', '/logo.gif',
-#             '/images/logo.png', '/images/logo.jpg', '/images/logo.svg',
-#             '/assets/logo.png', '/assets/logo.jpg', '/assets/logo.svg',
-#             '/img/logo.png', '/img/logo.jpg', '/img/logo.svg',
-#             '/static/logo.png', '/static/logo.jpg', '/static/logo.svg'
-#         ]
+
 
 # logging.basicConfig(level=logging.DEBUG)
 
@@ -45,12 +41,13 @@ def resolve_logo_url(base_url: str, img_href: str) -> str:
 
     if img_href.startswith("data:image/"):
         return img_href
+        # Handle
     
     if img_href.startswith("javascript:") or img_href == "#":
         return ""
     
     if img_href.startswith("//"):
-        return f"{parsed_base_url.scheme}{img_href}"
+        return f"{parsed_base_url.scheme}:{img_href}"
     if img_href.startswith(("http://", "https://")):
         return img_href
 
@@ -82,8 +79,6 @@ def get_img_extension(url: str) -> str:
     return ".png"
 
 
-
-
 async def download_img(logo_href: str, domain: str, session: aiohttp.ClientSession, img_size=(64, 64), output_file_path="", retries=2):
     """
         Logic for downloading an image and resizing it to 64x64 (default) from logo_url.
@@ -107,16 +102,37 @@ async def download_img(logo_href: str, domain: str, session: aiohttp.ClientSessi
 
         print("Domain: ", domain)
 
-        headers_content = headers_randomizer(domain)
-        headers = {
-
-            "User-Agent": headers_content["User-Agent"],
-            "Accept": "image/avif,image/jpeg,image/jpg,image/png,image/apng,image/gif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
-            "Accept-Language": headers_content["Accept-Language"],
-            "Referer": f"https://{domain}",
-            "Connection": "keep-alive"
-        }
+        headers = headers_randomizer(domain)
         
+        # Handling data:image files
+        try:
+            if logo_url.startswith("data:image"):
+                header, data = logo_url.split(",", 1)
+                p_extension = re.search(r"data:image/(\w+)", header)
+                extension = p_extension.group(1) if p_extension else "png"
+
+                if "base64" in header:
+                    img_data = base64.b64decode(data)
+
+                else:
+                    # Handling URL encoded situation.
+                    img_data = urllib.parse.unquote_to_bytes(data)
+                
+                filename = f"{domain}.{extension}"
+                img_hash = hashlib.md5(img_data).hexdigest()
+                file_path = os.path.join(output_file_path, filename)
+
+                with open(file_path, "wb") as f:
+                    f.write(img_data)
+                return {
+                    "domain": domain,
+                    "logo_url": logo_url,
+                    "size": os.path.getsize(file_path),
+                    "img_hash": img_hash
+                }
+
+        except Exception as e:
+            print(f"Error downloading data:image file: {e}")
         
         for attempt in range(retries + 1):       
             try:
@@ -152,15 +168,36 @@ async def download_img(logo_href: str, domain: str, session: aiohttp.ClientSessi
                 return None # all retries failed.
             
 
+            os.makedirs(output_file_path, exist_ok=True)
             try:
-                img = Image.open(BytesIO(content))
-                img = img.convert("RGB")
-                img_resized = img.resize(img_size, Image.Resampling.LANCZOS)
-                # Resizing to 64x64
-                os.makedirs(output_file_path, exist_ok=True) # Move to download_all_img
-                img_resized.save(file_path)
-                img_hash = hashlib.md5(img_resized.tobytes()).hexdigest()
-                # And hashing the resized image for near-duplicate detection.
+                if extension.lower() == ".svg":
+                    with open(file_path, "wb") as f:
+                        f.write(content)
+                    img_hash = hashlib.md5(content).hexdigest()
+                    
+                    return {
+                        "domain": domain,
+                        "logo_url": logo_url,
+                        "size": os.path.getsize(file_path),
+                        "img_hash": img_hash
+                    }
+
+                else:
+ 
+                    img = Image.open(BytesIO(content))
+                    if img.mode == "RGBA" or (img.mode == "P" and "transparency" in img.info):
+                        img_alpha = img.convert("RGBA")
+                        img_resized = img_alpha.resize(img_size, Image.Resampling.LANCZOS)
+                    else:
+                        img = img.convert("RGB")
+                        img_resized = img.resize(img_size, Image.Resampling.LANCZOS)
+
+                    if img_resized.mode == "RGBA" and not file_path.lower().endswith((".png", ".webp")):
+                        file_path = os.path.splitext(file_path)[0] + ".png"
+                    # Resizing to 64x64 for compression.
+                    img_resized.save(file_path)
+                    img_hash = hashlib.md5(img_resized.tobytes()).hexdigest()
+                    # And hashing the resized image for near-duplicate detection.
                 
                 return {
                     "domain": domain,
@@ -176,6 +213,7 @@ async def download_img(logo_href: str, domain: str, session: aiohttp.ClientSessi
     except Exception as err:
         print(f"Generic error: {err}") 
         return None
+ 
 
 async def image_downloader(logo_urls: List[Dict[str, str]], output_file_path=""):
     
@@ -204,7 +242,7 @@ async def image_downloader(logo_urls: List[Dict[str, str]], output_file_path="")
         for pair in logo_urls:
             domain = pair["domain"]
             logo_url = pair["logo_url"]
-            to_download.append(download_img(logo_url, domain, client, output_file_path,))
+            to_download.append(download_img(logo_url, domain, client, output_file_path=output_file_path))
             print("Pair: ", pair)
         
         res = await asyncio.gather(*to_download)

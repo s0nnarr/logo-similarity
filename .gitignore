@@ -6,3 +6,4 @@ __pycache__/
 *.DS_Store
 .gitignore
 */resolved_links.txt
+Images

@@ -6,7 +6,7 @@
   },
   {
     "domain": "astrazeneca.ua",
-    "resolved_ip": "3.33.202.255",
+    "resolved_ip": "15.197.255.153",
     "status": "success"
   },
   {
@@ -66,7 +66,7 @@
   },
   {
     "domain": "zalando.cz",
-    "resolved_ip": "3.160.246.67",
+    "resolved_ip": "3.160.246.31",
     "status": "success"
   },
   {
@@ -91,7 +91,7 @@
   },
   {
     "domain": "lidl.com.cy",
-    "resolved_ip": "23.197.129.33",
+    "resolved_ip": "23.212.215.195",
     "status": "success"
   },
   {
@@ -102,11 +102,6 @@
   {
     "domain": "freseniusmedicalcare.ca",
     "resolved_ip": "13.107.246.10",
-    "status": "success"
-  },
-  {
-    "domain": "synlab.com.tr",
-    "resolved_ip": "89.44.139.37",
     "status": "success"
   },
   {
@@ -126,7 +121,7 @@
   },
   {
     "domain": "affidea.ba",
-    "resolved_ip": "15.161.156.80",
+    "resolved_ip": "15.160.73.215",
     "status": "success"
   },
   {
@@ -151,7 +146,7 @@
   },
   {
     "domain": "veolia.com.ru",
-    "resolved_ip": "104.18.37.208",
+    "resolved_ip": "104.18.7.110",
     "status": "success"
   },
   {
@@ -196,7 +191,7 @@
   },
   {
     "domain": "pirtek.be",
-    "resolved_ip": "172.67.164.36",
+    "resolved_ip": "104.21.50.160",
     "status": "success"
   },
   {
@@ -226,7 +221,7 @@
   },
   {
     "domain": "xella-colloquium.berlin",
-    "resolved_ip": "188.114.97.3",
+    "resolved_ip": "188.114.96.3",
     "status": "success"
   },
   {
