@@ -1,5 +1,7 @@
 from bs4 import BeautifulSoup
 from typing import Dict, Any, List
+import asyncio
+
 
 def extract_logo(domain: str, html: str) -> str | None:
     url = "" # Logo URL
@@ -74,10 +76,11 @@ async def extract_site_logo(res_object: Dict[str, Any]):
     if not res_object["success"]:
         return None
     
+    
     domain = res_object["domain"]
-
+    html_content = res_object["html"]
     try:
-        logo_href = extract_logo(res_object["domain"], res_object["html"])
+        logo_href = await asyncio.to_thread(extract_logo, domain, html_content)
         if logo_href:
             return {
                 "domain": domain,

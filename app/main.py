@@ -46,15 +46,18 @@ async def main():
             counter += 1
         print(counter)
 
-    # print(resolved_ips[:50])
+    print(resolved_ips[:50])
+
     # Parse
     html_contents = await scrape_html(resolved_ips)
 
     logo_tasks = [extract_site_logo(res_object) for res_object in html_contents]
     logo_results = await asyncio.gather(*(logo_tasks))
+    
     domain_logos = [result for result in logo_results if result is not None]  
     
     print(domain_logos) 
+    print("\n")
     print(f"Found {len(domain_logos)} logos.")         
  
     downloaded_logos = await image_downloader(domain_logos, IMG_PATH)
