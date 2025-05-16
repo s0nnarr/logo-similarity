@@ -8,3 +8,7 @@ aiodns
 httpx
 httpcore
 socket
+
+
+torch
+clip
