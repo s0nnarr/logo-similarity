@@ -3,24 +3,71 @@ from typing import Dict, Any, List
 
 def extract_logo(domain: str, html: str) -> str | None:
     url = "" # Logo URL
+    potential_logo_names = [
+        "logo", "icon",
+        "brand", "trademark",
+        "emblem", "favicon"
+    ]
 
     try:
 
-        potential_logo_names = [
-            "logo", ""
-            "brand",
-
-        ]
+  
         soup = BeautifulSoup(html, "html.parser")
         img = (
-            soup.find("img", alt=lambda v: v and "logo" in v.lower()) or
-            soup.find("img", class_=lambda v: v and "logo" in v.lower()) or
-            soup.find("img", id=lambda v: v and "logo" in v.lower())
+            soup.find("img", alt=lambda v: v and any(name in v.lower() for name in potential_logo_names)) or
+            soup.find("img", class_=lambda v: v and any(name in v.lower() for name in potential_logo_names)) or
+            soup.find("img", id=lambda v: v and any(name in v.lower() for name in potential_logo_names))
         )
         if img and img.get("src"):
             return img.get("src") # Returns img href
+        
+
+        # Doesn't return with 100% confidence.
+        svg_list = soup.find_all("svg") 
+        for svg in svg_list:
+            classes = svg.get("class", [])
+            if isinstance(classes, str):
+                classes = classes.split()
+            svg_id = svg.get("id", "")
+            title_tag = svg.find("title")
+            title_text = title_tag.text if title_tag else ""
+            text_candidates = classes + [svg_id, title_text]
+            candidates = [str(c).lower() for c in text_candidates if c]
+
+            if any(name in candidate for candidate in candidates for name in potential_logo_names):
+                return str(svg)
+         
+        use = soup.find("use", href=True) or soup.find("use", {"xlink:href":True})
+        if use:
+            href = use.get("href") or use.get("xlink:href")
+            if href:
+                return href
+        
+        favicon = soup.find("link", rel=lambda v: v and "logo" in v.lower())
+        if favicon and favicon.get("href"):
+            return favicon["href"]
+        
+        meta_tag = soup.find("meta", property="og:image")
+        if meta_tag and meta_tag.get("content"):
+            return meta_tag["content"]
+        
+        a_tags = soup.find_all("a")
+        for a_tag in a_tags:
+            attrs = " ".join([
+                " ".join(a_tag.get("class", [])) if isinstance(a_tag.get("class"), list) else a_tag.get("class", "")
+            ]).lower()
+
+            if any(name in attrs for name in potential_logo_names):
+                img = a_tag.find("img")
+                if img and img.get("src"):
+                    return img.get("src")
+                
+                svg = a_tag.find("svg")
+                if svg:
+                    return str(svg)
+
     except Exception as e:
-        print(f"Error parsing HTMl on domain {domain}: {e}.")
+        print(f"Error parsing HTML on domain {domain}: {e}.")
     return None
 
 async def extract_site_logo(res_object: Dict[str, Any]):

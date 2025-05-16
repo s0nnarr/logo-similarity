@@ -6,7 +6,7 @@
   },
   {
     "domain": "astrazeneca.ua",
-    "resolved_ip": "15.197.255.153",
+    "resolved_ip": "3.33.202.255",
     "status": "success"
   },
   {
@@ -105,6 +105,11 @@
     "status": "success"
   },
   {
+    "domain": "synlab.com.tr",
+    "resolved_ip": "89.44.139.37",
+    "status": "success"
+  },
+  {
     "domain": "avis.cr",
     "resolved_ip": "100.27.167.112",
     "status": "success"
@@ -121,7 +126,7 @@
   },
   {
     "domain": "affidea.ba",
-    "resolved_ip": "15.160.73.215",
+    "resolved_ip": "15.161.156.80",
     "status": "success"
   },
   {
@@ -146,7 +151,7 @@
   },
   {
     "domain": "veolia.com.ru",
-    "resolved_ip": "104.18.7.110",
+    "resolved_ip": "104.18.37.208",
     "status": "success"
   },
   {
@@ -216,7 +221,7 @@
   },
   {
     "domain": "allianz.nl",
-    "resolved_ip": "104.18.171.67",
+    "resolved_ip": "104.18.170.67",
     "status": "success"
   },
   {
