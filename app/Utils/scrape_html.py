@@ -5,51 +5,10 @@ import random
 from typing import Dict, Any, Optional, List
 from urllib.parse import urlparse 
 
-user_agents = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36",
-    "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:124.0) Gecko/20100101 Firefox/124.0",
-    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
-    "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Mobile Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15",
-    "Mozilla/5.0 (iPad; CPU OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
-    "Mozilla/5.0 (Linux; Android 13; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Mobile Safari/537.36",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 11.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Edge/123.0.2420.65 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.57 Safari/537.36",
-    "Mozilla/5.0 (Linux; Android 12; SM-A528B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.86 Mobile Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:124.0) Gecko/20100101 Firefox/124.0",
-    "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
-]
-
-accept_languages = [
-    "en-US,en;q=0.9",
-    "en-GB,en;q=0.8",
-    "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
-    "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
-    "es-ES,es;q=0.9,en;q=0.8",
-    "it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7",
-    "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
-    "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
-    "ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7",
-    "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
-    "nl-NL,nl;q=0.9,en-US;q=0.8,en;q=0.7",
-    "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
-    "pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7",
-    "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
-    "sv-SE,sv;q=0.9,en-US;q=0.8,en;q=0.7"
-]
+from Utils.headers import headers_randomizer
 
 
 
-
-def headers_randomizer(domain: str) -> Dict[str, str]:
-    return {
-        "User-Agent" : random.choice(user_agents),
-        "Accept-Language": random.choice(accept_languages),
-        "Host": domain,
-    }
 
 async def fetch_and_retry(client: httpx.AsyncClient, domain: str, ip: Optional[str], max_retries: int = 3) -> Dict[str, Any]:
     """
@@ -68,13 +27,14 @@ async def fetch_and_retry(client: httpx.AsyncClient, domain: str, ip: Optional[s
         'error': None,
         "url": None
     }
+ 
     
     for attempt in range(max_retries):
         for link in next_link:
             try:
+                headers = headers_randomizer(domain)
                 parsed_link = urlparse(link)
                 domain = parsed_link.netloc or parsed_link.path
-                headers = headers_randomizer(domain)
 
                 if ip:
                     # Use IP directly if provided.
@@ -94,8 +54,8 @@ async def fetch_and_retry(client: httpx.AsyncClient, domain: str, ip: Optional[s
                 )
 
                 if req.status_code == 200:
-                    res_object["success"] = True,
-                    res_object["status_code"] = req.status_code,
+                    res_object["success"] = True
+                    res_object["status_code"] = req.status_code
                     res_object["html"] = req.text
                     res_object["url"] = req.url
                     return res_object
@@ -106,15 +66,13 @@ async def fetch_and_retry(client: httpx.AsyncClient, domain: str, ip: Optional[s
                         next_link.append(redirect_link)
 
                 res_object["status_code"] = req.status_code
-
-
             except httpx.ConnectTimeout:
                 res_object["error"] = "Connection timeout."
                 continue
-
             
             except Exception as e:
                 res_object["error"] = "Unexpected error fetching HTML."
+        
         if attempt < max_retries - 1:
             await asyncio.sleep(attempt + 1)
     
@@ -146,7 +104,7 @@ async def scrape_html(resolved_links: List[Dict[str, Any]]) -> List[Dict[Any, st
 
     semaphore = asyncio.Semaphore(concurrency)
     res = []
-
+   
     async with httpx.AsyncClient(
         verify=False,
         follow_redirects=True,
@@ -167,6 +125,7 @@ async def scrape_html(resolved_links: List[Dict[str, Any]]) -> List[Dict[Any, st
             completed_batch = [bounded_fetch(resolved_link_pair) for resolved_link_pair in batch]
             batch_results = await asyncio.gather(*(completed_batch))
             res.extend(batch_results)
+            print(f"Finished batch {i} {batch_size}")
             
             await asyncio.sleep(0.4)
 
@@ -175,6 +134,50 @@ async def scrape_html(resolved_links: List[Dict[str, Any]]) -> List[Dict[Any, st
             
 
 
-    
+    """
+    [FIXME]
+    stanbicbank.co.zw
+
+    greatplacetowork.com.bo
+
+    tupperware.at
+
+    zalando.cz
+
+    ymcasteuben.org
+
+    avoncameroun.com
+
+    noiseassessments.org
+
+    mazdaofamarillo.com
+
+    worldvision.ca
+
+    nestle.com.vn
+
+    daikin.ge
+
+    crocs.co.id
+
+    renaultmerida.com.mx
+
+    veolia.fr
+
+    intersport-rent.fr
+
+    nestle.ch
+
+    wurth.com.uy
+
+    veolia.ca
+
+    linde-finance.com
+
+    wurth-international.com.cn
+
+    mooresingapore.com
+
+    """
 
 
