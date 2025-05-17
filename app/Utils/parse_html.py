@@ -367,6 +367,7 @@ class LogoExtractor:
             Returns the URL of the logo if something feasible is found.
             
         """
+
         try:
             soup = BeautifulSoup(html, "html.parser")
         except Exception as err:
@@ -375,6 +376,20 @@ class LogoExtractor:
         
         candidates = []
         # First priority: Favicons and meta tags.
+        def get_icon_size(tag): # "×"
+            sizes = tag.get("sizes", "").replace("×", "x").lower()
+            match = re.match(r"(\d+)[x](\d+)", sizes)
+            
+            # More "defensive" approach using regex instead of weird unicode symbol.
+
+
+            if match:
+                try:
+                    return int(match.group(1))
+                except ValueError:
+                    return 0
+            return 0
+
         try:
             manifest_link = soup.find("link", {"rel": "manifest"})
             if manifest_link and manifest_link.has_attr("href"):
@@ -382,20 +397,26 @@ class LogoExtractor:
 
             apple_icons = soup.find_all("link", {"rel": lambda r: r and "apple-touch-icon" in r})
             if apple_icons:
-                for icon in sorted(apple_icons,
-                                   key=lambda x: int(x.get("sizes", "0x0").split("x")[0]) if x.get("sizes") and "x" in x.get("sizes") else 0,
-                                   reverse=True):
-                    if icon.has_attr("href"):
-                        candidates.append(("apple-icon", 5, icon["href"]))
-                        break
+                try:
+                    for icon in sorted(apple_icons,
+                                    key=get_icon_size,
+                                    reverse=True):
+                        if icon.has_attr("href"):
+                            candidates.append(("apple-icon", 5, icon["href"]))
+                            break
+                except Exception as err:
+                    print(f"Error extracting apple_icons on domain {domain}. ERR: {err}")
             favicons = soup.find_all("link", {"rel": lambda r: r and ("icon" in r and "apple" not in r)})
             if favicons:
-                for icon in sorted(favicons,
-                                    key=lambda x: int(x.get("sizes", "0x0").split("x")[0]) if x.get("sizes") and "x" in x.get("sizes") else 0,
-                                    reverse=True):
-                    if icon.has_attr("href"):
-                        candidates.append(("favicon", 3, icon["href"]))
-                        break
+                try: 
+                    for icon in sorted(favicons,
+                                        key=get_icon_size,
+                                        reverse=True):
+                        if icon.has_attr("href"):
+                            candidates.append(("favicon", 3, icon["href"]))
+                            break
+                except Exception as err:
+                    print(f"Error extracting favicon on domain {domain}. ERR: {err}")
             ms_image = soup.find("meta", {"name": "msapplication-TileImage"})
             if ms_image and ms_image.has_attr("content"):
                 candidates.append(("ms-tile", 3, ms_image["content"]))

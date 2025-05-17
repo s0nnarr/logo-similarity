@@ -48,12 +48,17 @@ async def main():
 
     # print(resolved_ips[:50])
     # Parse
+
     html_contents = await scrape_html(resolved_ips)
+    for res_object in html_contents:
+        if res_object["success"] == False:
+            print(f"{res_object["domain"]}\n")
+    print(f"Length of html_contents: {len(html_contents)}")
 
-    logo_tasks = [extract_site_logo(res_object) for res_object in html_contents]
-    logo_results = await asyncio.gather(*(logo_tasks))
+    # logo_tasks = [extract_site_logo(res_object) for res_object in html_contents]
+    # logo_results = await asyncio.gather(*(logo_tasks))
 
-    domain_logos = [result for result in logo_results if result is not None]  
+    # domain_logos = [result for result in logo_results if result is not None]  
 
 
     # print("Found: ", domain_logos)

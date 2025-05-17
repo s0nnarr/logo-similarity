@@ -54,8 +54,8 @@ async def fetch_and_retry(client: httpx.AsyncClient, domain: str, ip: Optional[s
                 )
 
                 if req.status_code == 200:
-                    res_object["success"] = True,
-                    res_object["status_code"] = req.status_code,
+                    res_object["success"] = True
+                    res_object["status_code"] = req.status_code
                     res_object["html"] = req.text
                     res_object["url"] = req.url
                     return res_object
@@ -136,6 +136,50 @@ async def scrape_html(resolved_links: List[Dict[str, Any]]) -> List[Dict[Any, st
             
 
 
-    
+    """
+    [FIXME]
+    stanbicbank.co.zw
+
+    greatplacetowork.com.bo
+
+    tupperware.at
+
+    zalando.cz
+
+    ymcasteuben.org
+
+    avoncameroun.com
+
+    noiseassessments.org
+
+    mazdaofamarillo.com
+
+    worldvision.ca
+
+    nestle.com.vn
+
+    daikin.ge
+
+    crocs.co.id
+
+    renaultmerida.com.mx
+
+    veolia.fr
+
+    intersport-rent.fr
+
+    nestle.ch
+
+    wurth.com.uy
+
+    veolia.ca
+
+    linde-finance.com
+
+    wurth-international.com.cn
+
+    mooresingapore.com
+
+    """
 
 
