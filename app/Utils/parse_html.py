@@ -73,7 +73,7 @@ class LogoExtractor:
             if kw in filename:
                 conf += w
         
-        for kw, w in self.blacklisted_keywords:
+        for kw, w in self.blacklisted_keywords.items():
             if kw in filename:
                 conf += w
             # Weight is negative, so conf += w actually subtracts that weight.
@@ -117,11 +117,12 @@ class LogoExtractor:
         
         return conf
     
-    def confidence_element(self, tag, soup, domain: str) -> Tuple[float, Optional[str]]:
+    def confidence_element(self, tag, soup, domain: str):
         """
             Defines how likely an element is to be a logo.
         """
         conf = 0
+        src = None
 
         for attr in ["class", "id", "name"]:
             if tag.has_attr(attr):
@@ -135,6 +136,7 @@ class LogoExtractor:
                 for kw, w in self.blacklisted_keywords.items():
                     if kw in attr_val:
                         conf += w
+
         if attr in ["alt", "title"]:
             if tag.has_attr(attr):
                 text_confidence = self.score_text_content(domain, tag[attr])
@@ -239,13 +241,13 @@ class LogoExtractor:
         try:
             dom_position = len(list(soup.find_all())) - len(list(tag.find_all()))
             if dom_position < 100:
-                score += 1
+                conf += 1
         except Exception:
             pass
 
         return conf, src
 
-    def find_images_in_containers(self, soup, domain: str) -> List[Tuple[float, str]]:
+    def find_images_in_containers(self, soup, domain: str):
         """
         Finds images withing container elements that have className or ids related to logos.
         """
@@ -271,7 +273,7 @@ class LogoExtractor:
                     if src:
                         results.append((total_confidence, src))
             
-            for tag in container.find_al(style=True):
+            for tag in container.find_all(style=True):
                 style = tag["style"]
                 bg_match = re.search(r'background(-image)?:\s*url\([\'"]?([^\'")]+)[\'"]?\)', style)
                 if bg_match:
@@ -293,7 +295,7 @@ class LogoExtractor:
                         results.append((total_confidence, bg_url))
         return results
 
-    def find_logos_in_anchors(self, soup, domain: str) -> List[Tuple[float, str]]:
+    def find_logos_in_anchors(self, soup, domain: str):
         """
         Find logo candidates that likely link to the homepage.
         """
@@ -307,7 +309,7 @@ class LogoExtractor:
         for link in homepage_links:
             link_confidence = 0
             if link.has_attr("class"):
-                classes = " ".join(link["class"]) if isinstance(link["class", list]) else link["class"]
+                classes = " ".join(link["class"]) if isinstance(link["class"], list) else link["class"]
                 if any(kw in classes.lower() for kw in ["logo", "brand"]):
                     link_confidence += 4
             if link.has_attr("id"):
@@ -330,7 +332,7 @@ class LogoExtractor:
 
         return results
     
-    def find_logos_from_css(self, soup, domain: str) -> List[Tuple[float, str]]:
+    def find_logos_from_css(self, soup, domain: str):
         """
         Finding logos with common css attributes.
         """
@@ -401,14 +403,10 @@ class LogoExtractor:
             og_image = soup.find("meta", {"property": "og:image"})
             if og_image and og_image.has_attr("content"):
                 candidates.append(("og-image", 1, og_image["content"]))
-            
-            og_image = soup.find('meta', {'property': 'og:image'})
-            if og_image and og_image.has_attr('content'):
-                candidates.append(('og-image', 1, self.normalize_url(og_image['content'], domain)))
-            
+       
             twitter_image = soup.find('meta', {'name': 'twitter:image'})
             if twitter_image and twitter_image.has_attr('content'):
-                candidates.append(('twitter-image', 1, self.normalize_url(twitter_image['content'], domain)))
+                candidates.append(('twitter-image', 1, twitter_image["content"]))
             
             schema_tags = soup.find_all('script', {'type': 'application/ld+json'})
             for tag in schema_tags:
@@ -433,7 +431,7 @@ class LogoExtractor:
                                             break
                             
                             if logo_url:
-                                candidates.append(('schema-logo', 6, self.normalize_url(logo_url, domain)))
+                                candidates.append(('schema-logo', 6, logo_url))
                 except (json.JSONDecodeError, AttributeError) as err:
                     print(f"Error parsing schema data: {err}")
                     pass
@@ -464,34 +462,98 @@ class LogoExtractor:
                     total_confidence = url_confidence + elem_confidence
                     if total_confidence > 0:
                         candidates.append(("bg-image", total_confidence, bg_url))
+            # Handling container results.
+            try:
+                container_results = self.find_images_in_containers(soup, domain)
+                if container_results:
+                    if isinstance(container_results, list):
+                        for item in container_results:
+                            try:
+                                if isinstance(item, tuple) and len(item) >= 2:
+                                    confidence, url = item[0], item[1]
+                                    if isinstance(confidence, (int, float)) and isinstance(url, str):
+                                        candidates.append(("container-logo", confidence, url))
+                            except Exception as err:
+                                print(f"Invalid items in container results: {err}")
+                    elif isinstance(container_results, tuple) and len(container_results) >= 2:
+                        # Single tuple returned.
+                        confidence, url = container_results[0], container_results[1]
+                        if isinstance(confidence, (int, float)) and isinstance(url, str):
+                            candidates.append(("container-logo", confidence, url))
+            except Exception as err:
+                print(f"Error finding images in containers for {domain}. ERR: {err}")
+
+            # Handling anchor results.
+            try:
+                anchor_results = self.find_logos_in_anchors(soup, domain)
+                if anchor_results:
+                    if isinstance(anchor_results, list):
+                        for item in anchor_results:
+                            try:
+                                if isinstance(item, tuple) and len(item) >= 2:
+                                    confidence, url = item[0], item[1]
+                                    if isinstance(confidence, (int, float)) and isinstance(url, str):
+                                        candidates.append(("anchor-logo", confidence, url))
+                            except Exception as err:
+                                print(f"Invalid images in anchors for {domain}. ERR: {err}")
+                    elif isinstance(anchor_results, tuple) and len(anchor_results) >= 2:
+                        confidence, url = anchor_results[0], anchor_results[1]
+                        if isinstance(confidence, (int, float)) and isinstance(url, str):
+                            candidates.append(("anchor-logo", confidence, url))
+            except Exception as err:
+                print(f"Error finding images in anchors for {domain}. ERR: {err}")
             
-            container_results = self.find_images_in_containers(soup, domain)
-            for confidence, url in container_results:
-                candidates.append(("container-logo", confidence, url))
-            
-            anchor_results = self.find_logos_in_anchors(soup, domain)
-            for confidence, url in anchor_results:
-                candidates.append(("anchor-logo", confidence, url))
-            
-            css_results = self.find_logos_from_css(soup, domain)
-            for confidence, url in css_results:
-                candidates.append(("css-logo", confidence, url))
-            
+            # Handling css results.
+            try:
+                css_results = self.find_logos_from_css(soup, domain)
+                if css_results:
+                    if isinstance(css_results, list):
+                        for item in css_results:
+                            try:
+                                if isinstance(item, tuple) and len(item) >= 2:
+                                    confidence, url = item[0], item[1]
+                                    if isinstance(confidence, (int, float)) and isinstance(url, str):
+                                        candidates.append(("css-logo", confidence, url))
+                            except Exception as err:
+                                print(f"Invalid images in css for {domain}. ERR: {err}")
+                    elif isinstance(css_results, tuple) and len(css_results) >= 2:
+                        confidence, url = css_results[0], css_results[1]
+                        if isinstance(confidence, (int, float)) and isinstance(url, str):
+                            candidates.append(("css-logo", confidence, url))
+            except Exception as err:
+                print(f"Error finding images in css for {domain}. ERR: {err}")
+    
             for path in self.common_logo_paths:
                 candidates.append(("common-path", 2, path))
-
+        
         except Exception as err:
             print(f"Error getting a img from HTML tags. Domain: {domain}; Err: {err}")
 
-        candidates.sort(key=lambda x: x[1], reverse=True)
-        for candidate_type, confidence, src in candidates:
-            if src and src.strip():
-                # For SVG, the content is final
-                if candidate_type == "svg" and src.startswith("<svg"):
+        # Ensure all candidates are properly formatted before sorting.
+        valid_candidates = []
+        for candidate in candidates:
+            try:
+                if isinstance(candidate, tuple) and len(candidate) == 3:
+                    candidate_type, confidence, src = candidate
+                    valid_candidates.append((candidate_type, confidence, src))
+                else:
+                    print(f"Skipping malformed / corrupt candidate: {candidate}")
+            except Exception as err:
+                print(f"Error processing candidates. ERR: {err}")
+            
+
+        valid_candidates.sort(key=lambda x: x[1], reverse=True)
+        for candidate_type, confidence, src in valid_candidates:
+            try:
+                if src and src.strip():
+                    # For SVG, the content is final
+                    if candidate_type == "svg" and src.startswith("<svg"):
+                        print(f"Found candidate {candidate_type} for {domain} with confidence value {confidence}")
+                        return src
                     print(f"Found candidate {candidate_type} for {domain} with confidence value {confidence}")
                     return src
-                print(f"Found candidate {candidate_type} for {domain} with confidence value {confidence}")
-                return src
+            except Exception as err:
+                print(f"Error processing candidate {candidate_type}. ERR: {err}")
         print(f"No logo found for domain {domain}")
         return None
 
@@ -525,5 +587,7 @@ async def extract_site_logo(res_object: Dict[str, Any]):
         print(f"Failed to extract logo from {res_object["domain"]}: {e}")
         return None
 
+# async def extract_batch():
+    
 
 #https://www.stanbicbank.co.zw/zimbabwe/personal/ways-to-bank/Online-banking -> deal with sketch style logos.
