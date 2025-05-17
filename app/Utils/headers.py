@@ -44,6 +44,14 @@ def headers_randomizer(domain: str) -> Dict[str, str]:
         "User-Agent": random.choice(user_agents),
         "Accept": "image/avif,image/jpeg,image/jpg,image/png,image/apng,image/gif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
         "Accept-Language": random.choice(accept_languages),
+        "Accept-Encoding": "gzip, deflate, br",
+        "Host": domain,
         "Referer": f"https://{domain}",
-        "Connection": "keep-alive"
+        "Connection": "keep-alive",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
+        "Pragma": "no-cache",
+        "Cache-control": "no-cache"
     }

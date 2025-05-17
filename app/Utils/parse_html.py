@@ -4,7 +4,7 @@ from urllib.parse import urljoin, urlparse
 
 import asyncio
 import re
-import json    
+import json
 
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
@@ -431,6 +431,9 @@ class LogoExtractor:
             
             schema_tags = soup.find_all('script', {'type': 'application/ld+json'})
             for tag in schema_tags:
+                raw_json = tag.string
+                if not raw_json or not raw_json.strip():
+                    continue
                 try:
                     if tag.string:
                         schema_data = json.loads(tag.string)
@@ -454,7 +457,7 @@ class LogoExtractor:
                             if logo_url:
                                 candidates.append(('schema-logo', 6, logo_url))
                 except (json.JSONDecodeError, AttributeError) as err:
-                    print(f"Error parsing schema data: {err}")
+                    print(f"Error parsing schema data with json5: {err}")
                     pass
                     
         except Exception as err:

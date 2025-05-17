@@ -1,7 +1,10 @@
 import asyncio
 import socket
 import aiodns
-from typing import List, Dict, Any
+import httpcore
+from typing import List, Dict, Any, Tuple
+import httpx
+
 
 async def resolve_domain(domain: str, timeout=10) -> Dict[str, Any]:
     resolver = aiodns.DNSResolver()

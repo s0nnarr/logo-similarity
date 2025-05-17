@@ -37,7 +37,7 @@ async def main():
 
         domains = get_links(PARQUET_PATH)
         print("Number of links: ", len(domains))
-        resolved_ips = await resolve_all_domains(domains[:200])
+        resolved_ips = await resolve_all_domains(domains)
         # print(resolved_ips)
     counter = 1
     if resolved_ips:
@@ -46,26 +46,27 @@ async def main():
             counter += 1
         print(f"Resolved IPs: {counter}")
 
-    # print(resolved_ips[:50])
     # Parse
-
+    failed_sites_counter = 0
     html_contents = await scrape_html(resolved_ips)
     for res_object in html_contents:
         if res_object["success"] == False:
+            failed_sites_counter += 1
             print(f"{res_object["domain"]}, ERR: {res_object["error"]}\n SUCCESS: {res_object["success"]}")
     print(f"Length of html_contents: {len(html_contents)}")
 
-    # logo_tasks = [extract_site_logo(res_object) for res_object in html_contents]
-    # logo_results = await asyncio.gather(*(logo_tasks))
+    logo_tasks = [extract_site_logo(res_object) for res_object in html_contents]
+    logo_results = await asyncio.gather(*(logo_tasks))
 
-    # domain_logos = [result for result in logo_results if result is not None]  
+    domain_logos = [result for result in logo_results if result is not None]  
 
 
-    # print("Found: ", domain_logos)
+    print("Found: ", domain_logos)
     print("\n=== SUMMARY ===")
     print(f"Resolved: {len(resolved_ips)}")
     print(f"Scraped: {len(html_contents)}")
     print(f"Logos Found: {len(domain_logos)}")
+    print(f"Failed website checks: {failed_sites_counter}")
     # downloaded_logos = await image_downloader(domain_logos, IMG_PATH)
     print("---%s seconds---" % (time.time() - start_time))
 
