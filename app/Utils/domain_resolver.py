@@ -20,7 +20,7 @@ async def resolve_all_domains(domains: List[str]) -> List[Dict[str, Any]]:
     Args:
         domains: List with unresolved domains.
 
-    Return:
+    Return
         res: List with IPv4 resolved domains.
 
     """
