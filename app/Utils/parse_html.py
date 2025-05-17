@@ -598,8 +598,7 @@ async def extract_site_logo(res_object: Dict[str, Any]):
         if logo_href:
             return {
                 "domain": domain,
-                "logo_url": logo_href
-                
+                "logo_url": logo_href      
             }
         else:
             print(f"[ERR] No logo found on domain: {domain}")

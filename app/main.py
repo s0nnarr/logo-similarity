@@ -52,7 +52,7 @@ async def main():
     html_contents = await scrape_html(resolved_ips)
     for res_object in html_contents:
         if res_object["success"] == False:
-            print(f"{res_object["domain"]}\n")
+            print(f"{res_object["domain"]}, ERR: {res_object["error"]}\n SUCCESS: {res_object["success"]}")
     print(f"Length of html_contents: {len(html_contents)}")
 
     # logo_tasks = [extract_site_logo(res_object) for res_object in html_contents]

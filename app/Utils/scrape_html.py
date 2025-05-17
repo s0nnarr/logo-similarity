@@ -66,15 +66,13 @@ async def fetch_and_retry(client: httpx.AsyncClient, domain: str, ip: Optional[s
                         next_link.append(redirect_link)
 
                 res_object["status_code"] = req.status_code
-
-
             except httpx.ConnectTimeout:
                 res_object["error"] = "Connection timeout."
                 continue
-
             
             except Exception as e:
                 res_object["error"] = "Unexpected error fetching HTML."
+        
         if attempt < max_retries - 1:
             await asyncio.sleep(attempt + 1)
     
