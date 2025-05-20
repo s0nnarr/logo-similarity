@@ -177,7 +177,8 @@ class LogoExtractor:
                     width_str = parts[1]
                     try:
                         if width_str.endswith("w"):
-                            width = int(width_str[:-1])
+                            width_float = float(width_str[:-1])
+                            width = int(round(width_float))
                             if width > highest_width and width < 500:
                                 # Capping the logo at 500px width
                                 highest_width = width 
@@ -434,28 +435,33 @@ class LogoExtractor:
                 raw_json = tag.string
                 if not raw_json or not raw_json.strip():
                     continue
+
                 try:
-                    if tag.string:
-                        schema_data = json.loads(tag.string)
+                    decoder = json.JSONDecoder()
+                    schema_data, _ = decoder.raw_decode(raw_json.strip())
+                except (json.decoder.JSONDecodeError, AttributeError) as err:
+                    print(f"Error parsing schema data. ERR: {err}")
+                    continue
+                try:
                         # Check for organization logo
-                        if isinstance(schema_data, dict):
-                            logo_url = None
-                            if 'logo' in schema_data and isinstance(schema_data['logo'], str):
-                                logo_url = schema_data['logo']
-                            elif 'organization' in schema_data and isinstance(schema_data['organization'], dict) and 'logo' in schema_data['organization']:
-                                logo_url = schema_data['organization']['logo']
-                            elif '@graph' in schema_data and isinstance(schema_data['@graph'], list):
-                                for item in schema_data['@graph']:
-                                    if isinstance(item, dict) and 'logo' in item:
-                                        if isinstance(item['logo'], str):
-                                            logo_url = item['logo']
-                                            break
-                                        elif isinstance(item['logo'], dict) and 'url' in item['logo']:
-                                            logo_url = item['logo']['url']
-                                            break
-                            
-                            if logo_url:
-                                candidates.append(('schema-logo', 6, logo_url))
+                    if isinstance(schema_data, dict):
+                        logo_url = None
+                        if 'logo' in schema_data and isinstance(schema_data['logo'], str):
+                            logo_url = schema_data['logo']
+                        elif 'organization' in schema_data and isinstance(schema_data['organization'], dict) and 'logo' in schema_data['organization']:
+                            logo_url = schema_data['organization']['logo']
+                        elif '@graph' in schema_data and isinstance(schema_data['@graph'], list):
+                            for item in schema_data['@graph']:
+                                if isinstance(item, dict) and 'logo' in item:
+                                    if isinstance(item['logo'], str):
+                                        logo_url = item['logo']
+                                        break
+                                    elif isinstance(item['logo'], dict) and 'url' in item['logo']:
+                                        logo_url = item['logo']['url']
+                                        break
+                        
+                        if logo_url:
+                            candidates.append(('schema-logo', 6, logo_url))
                 except (json.JSONDecodeError, AttributeError) as err:
                     print(f"Error parsing schema data with json5: {err}")
                     pass
