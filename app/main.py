@@ -37,7 +37,7 @@ async def main():
 
         domains = get_links(PARQUET_PATH)
         print("Number of links: ", len(domains))
-        resolved_ips = await resolve_all_domains(domains)
+        resolved_ips = await resolve_all_domains(domains[:200])
         # print(resolved_ips)
     counter = 1
     if resolved_ips:
