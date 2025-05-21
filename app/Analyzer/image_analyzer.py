@@ -10,4 +10,6 @@ class ImageAnalyzer:
             input_dir: Location where the images have been downloaded by the scraper.
             threshold: The threshold that considers logos similar. (0.0 to 1.0)
         """
+
+        self.input_dir = 
     
