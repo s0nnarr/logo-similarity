@@ -60,14 +60,13 @@ async def main():
 
     domain_logos = [result for result in logo_results if result is not None]  
 
-
-    print("Found: ", domain_logos)
+    downloaded_logos = await image_downloader(domain_logos, IMG_PATH)
+    # print("Found: ", domain_logos)
     print("\n=== SUMMARY ===")
     print(f"Resolved: {len(resolved_ips)}")
     print(f"Scraped: {len(html_contents)}")
     print(f"Logos Found: {len(domain_logos)}")
     print(f"Failed website checks: {failed_sites_counter}")
-    # downloaded_logos = await image_downloader(domain_logos, IMG_PATH)
     print("---%s seconds---" % (time.time() - start_time))
 
 

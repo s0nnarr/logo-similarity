@@ -40,7 +40,9 @@ def resolve_logo_url(base_url: str, img_href: str) -> str:
 
     if img_href.startswith("data:image/"):
         return img_href
-        # Handle
+
+    if img_href.startswith("<svg"):
+        return img_href
     
     if img_href.startswith("javascript:") or img_href == "#":
         return ""
@@ -78,20 +80,90 @@ def get_img_extension(url: str) -> str:
     return ".png"
 
 def resize_with_ar(img: Image.Image, target_size: tuple) -> Image.Image:
-    return ImageOps(img, target_size, method=Image.Resampling.LANCZOS, color=(0,0,0,0) if img.mode == "RGBA" else (255, 255, 255))
+    """
+    Resizes the image, containing the aspect ratio and handling transparency.
+    """
+    try:
+        if img.mode in ("RGBA", "LA", "P"):
+            if img.mode == "P" and "transparency" in img.info:
+                img = img.convert("RGBA")
+            background_color = (0, 0, 0, 0)
+        else:
+            if img.mode != "RGB":
+                img = img.convert("RGB")
+            background_color = (255, 255, 255)
+        resized_img = ImageOps.contain(
+            img,
+            target_size,
+            method=Image.Resampling.LANCZOS
+        )
+        if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
+            final_img = Image.new("RGBA", target_size, background_color)
+        else:
+            final_img = Image.new("RGB", target_size, background_color)
 
-def svg_conversion(svg_bytes: bytes, size=(64,64)) -> Image.Image :
+        x = (target_size[0] - resized_img.width) // 2
+        y = (target_size[1] - resized_img.height) // 2
+
+        if resized_img.mode == "RGBA" or "transparency" in resized_img.info:
+            final_img.paste(resized_img, (x, y), resized_img)
+        else:
+            final_img.paste(resized_img, (x, y))
+
+        return final_img
+    except Exception as err:
+        print(f"Error resizing the image. ERR: {err}")
+        return img
+
+def svg_conversion(svg_bytes: bytes, size=(128, 128)) -> bytes :
     """
     Converts SVGs to .PNG.
     SVGs cannot be converted to perceptual hashes.
     """
     
-    png_bytes = cairosvg.svg2png(bytestring=svg_bytes, output_width=size[0], output_height=size[1])
-    img = Image.open(BytesIO(png_bytes)).convert("RGBA")
-    return img
+    try:
+        png_bytes = cairosvg.svg2png(
+            bytestring=svg_bytes,
+            output_width=size[0],
+            output_height=size[1],
+            background_color="white" 
+        )
+    except Exception as err:
+        print(f"Error converting svg to .png. ERR: {err}")
+
+        # Trying without background color.
+        try: 
+            png_bytes = cairosvg.svg2png(
+                bytestring=svg_bytes,
+                output_width=size[0],
+                output_height=size[1]
+            )
+        except Exception as err2:
+            print(f"Error converting .svg on second try. {err2}")
+            raise err2
+    
+    return png_bytes
 
 
-async def download_img(logo_href: str, domain: str, session: aiohttp.ClientSession, img_size=(64, 64), output_file_path="", retries=2):
+def is_svg_content(content: bytes) -> bool:
+    if not content:
+        return False 
+    return b"<svg" in content[:300].lower() and b"xmlns" in content[:300].lower()
+    
+def is_valid_content(content: bytes) -> bool:
+    if len(content) < 10:
+        return False 
+
+    return (
+            content.startswith(b"\x89PNG") or
+            content.startswith(b"\xff\xd8\xff") or
+            content.startswith(b"GIF87a") or content.startswith(b"GIF89a") or
+            content.startswith(b"RIFF") or 
+            content.startswith(b"<svg") or 
+            is_svg_content(content)
+    )
+
+async def download_img(logo_href: str, domain: str, session: aiohttp.ClientSession, img_size=(128, 128), output_file_path="", retries=2):
     """
         Logic for downloading an image and resizing it to 64x64 (default) from logo_url.
 
@@ -109,13 +181,29 @@ async def download_img(logo_href: str, domain: str, session: aiohttp.ClientSessi
     try:
         logo_url = resolve_logo_url(domain, logo_href)
         extension = get_img_extension(logo_url)
-        filename = f"{domain.replace('.', '_')}{extension}"
+        filename = f"{domain}{extension}"
         file_path = os.path.join(output_file_path, filename)
-
-        print("Domain: ", domain)
-
-        headers = headers_randomizer(domain)
         
+        if "<svg" in logo_url or "</svg" in logo_url:
+            try: 
+                svg_xml = logo_url
+                svg_bytes = svg_xml.encode("utf-8") # string -> bytes.
+                png_bytes = svg_conversion(svg_bytes, img_size)
+                img = Image.open(BytesIO(png_bytes))
+                img_resized = resize_with_ar(img, img_size)
+                filename = f"{domain}.png"
+                file_path = os.path.join(output_file_path, filename)
+              
+                img_resized.save(file_path)
+                
+                return {
+                    "domain": domain,
+                    "logo_url": logo_url,
+                    "size": os.path.getsize(file_path),
+                }
+            except Exception as err:
+                print(f"Error setting SVG bytes on domain {domain}.")
+
         # Handling data:image files
         try:
             if logo_url.startswith("data:image"):
@@ -123,6 +211,7 @@ async def download_img(logo_href: str, domain: str, session: aiohttp.ClientSessi
                 p_extension = re.search(r"data:image/(\w+)", header)
                 extension = p_extension.group(1) if p_extension else "png"
 
+                img_data = None
                 if "base64" in header:
                     img_data = base64.b64decode(data)
 
@@ -130,21 +219,52 @@ async def download_img(logo_href: str, domain: str, session: aiohttp.ClientSessi
                     # Handling URL encoded situation.
                     img_data = urllib.parse.unquote_to_bytes(data)
                 
+                if img_data is None:
+                    print(f"Failed to decode data:image for {domain}")
+                    return None
+                
                 filename = f"{domain}.{extension}"
                 file_path = os.path.join(output_file_path, filename)
+                os.makedirs(output_file_path, exist_ok=True)
 
-                with open(file_path, "wb") as f:
-                    f.write(img_data)
+                try: 
+                    if extension.lower() == "svg":
+                        png_bytes = svg_conversion(img_data, size=img_size)
+                        filename = f"{domain}.png"
+                        file_path = os.path.join(output_file_path, filename)
+                        with open(file_path, "wb") as f:
+                            f.write(png_bytes)
+             
+                    else:
+                        img = Image.open(BytesIO(img_data))
+                        img_resized = resize_with_ar(img, img_size)
+
+                        if img_resized.mode == "RGBA" and not filename.lower().endswith((".png", ".webp")):
+                            filename = f"{domain}.png"
+                            file_path = os.path.join(output_file_path, filename)
+                        img_resized.save(file_path)
+
+
+                except Exception as err:
+                    print(f"Error processing data:image: {err}")
+                    with open(file_path, "wb") as f:
+                        f.write(img_data)
+                        # Save raw data.
+                
                 return {
                     "domain": domain,
                     "logo_url": logo_url,
                     "size": os.path.getsize(file_path),
                 }
-
+            
+     
         except Exception as e:
             print(f"Error downloading data:image file: {e}")
         
-        for attempt in range(retries + 1):       
+        headers = headers_randomizer(domain)
+
+        for attempt in range(retries + 1):     
+            content = None  
             try:
                 print(f"Trying to download: {logo_url}, attempt: {attempt} ")
                 if attempt > 0:
@@ -152,13 +272,13 @@ async def download_img(logo_href: str, domain: str, session: aiohttp.ClientSessi
 
                 async with session.get(logo_url, headers=headers, timeout=10, allow_redirects=True) as res:
                     if res.status != 200:
-                        print(f"Failed to download logo from: {domain}: HTTP Status: {res.status} ")
+                        print(f"Failed to download logo from: {logo_url}: HTTP Status: {res.status} ")
                         if attempt < retries:
                             continue
                         return None
                     
-                    if res.status == 200: 
-                        content = await res.read()
+                    content = await res.read()
+                    break
 
             except (aiohttp.ClientError, aiohttp.ClientConnectionError) as net_err:
                 print(f"Network error downloading: {logo_url}: {net_err}")
@@ -167,24 +287,28 @@ async def download_img(logo_href: str, domain: str, session: aiohttp.ClientSessi
                     continue
                 return None
             
-            except aiohttp.Timeout:
+            except asyncio.TimeoutError:
                 print(f"Timeout downloading image {logo_url}") 
                 if attempt < retries:
                     print("Retrying...")
                     continue
                 return None
             
-            if 'content' not in locals():
+            if content is None:
                 return None # all retries failed.
             
+            if not is_valid_content(content):
+                return None
 
             os.makedirs(output_file_path, exist_ok=True)
+
             try:
-                if extension.lower() == ".svg":
+                if is_svg_content(content):
                     # SVG -> PNG
-                    img = svg_conversion(content, size=img_size)
-                    img.save(output_file_path)
-                    
+                    png_bytes = svg_conversion(content, size=img_size)
+                    file_path = os.path.splitext(file_path)[0] + ".png"
+                    with open(file_path, "wb") as f:
+                        f.write(png_bytes)
                     return {
                         "domain": domain,
                         "logo_url": logo_url,
@@ -192,25 +316,23 @@ async def download_img(logo_href: str, domain: str, session: aiohttp.ClientSessi
                     }
 
                 else:
- 
-                    img = Image.open(BytesIO(content))
-                    if img.mode == "RGBA" or (img.mode == "P" and "transparency" in img.info):
-                        img_alpha = img.convert("RGBA")
-                        img_resized = resize_with_ar(img_alpha, img_size)
-                    else:
-                        img = img.convert("RGB")
+                    try:
+                        img = Image.open(BytesIO(content))
                         img_resized = resize_with_ar(img, img_size)
 
-                    if img_resized.mode == "RGBA" and not file_path.lower().endswith((".png", ".webp")):
-                        file_path = os.path.splitext(file_path)[0] + ".png"
+                        if img_resized.mode == "RGBA" and not file_path.lower().endswith((".png", ".webp")):
+                            file_path = os.path.splitext(file_path)[0] + ".png"
+                        img_resized.save(file_path)
 
-                    img_resized.save(file_path)
-                
-                return {
-                    "domain": domain,
-                    "logo_url": logo_url,
-                    "size": os.path.getsize(file_path),
-                }
+                    except Exception as pil_err:
+                        print(f"PIL error processing {logo_url}: {pil_err}")
+                        return None
+                    return {
+                        "domain": domain,
+                        "logo_url": logo_url,
+                        "size": os.path.getsize(file_path),
+                    }
+            
             
             except Exception as err:
                 print(f"Error processing image {logo_url}: {err}")
@@ -223,10 +345,11 @@ async def download_img(logo_href: str, domain: str, session: aiohttp.ClientSessi
 
 async def image_downloader(logo_urls: List[Dict[str, str]], output_file_path=""):
     
-    print("Downloading all images...")
+    print("\nDownloading all images...\n")
 
     os.makedirs(output_file_path, exist_ok=True)
-
+    batch_size=500
+    
     connector = aiohttp.TCPConnector(
         limit=10,
         ssl=False,
@@ -234,22 +357,21 @@ async def image_downloader(logo_urls: List[Dict[str, str]], output_file_path="")
         enable_cleanup_closed=True
     )
     timeout = aiohttp.ClientTimeout(
-        total=20
+        total=60
     ) 
 
     async with aiohttp.ClientSession(
         connector=connector,
         timeout=timeout,
+        
         ) as client:
 
-        to_download = []
-
-        # Implement batch logic => 500 obj per batch.
-        for pair in logo_urls:
-            domain = pair["domain"]
-            logo_url = pair["logo_url"]
-            to_download.append(download_img(logo_url, domain, client, output_file_path=output_file_path))
-            print("Pair: ", pair)
+        for i in range(0, len(logo_urls), batch_size):
+            batch = logo_urls[i:i+batch_size]
+            to_download = [
+                download_img(pair["logo_url"], pair["domain"], client, output_file_path=output_file_path)
+                for pair in batch
+            ]
         
         res = await asyncio.gather(*to_download)
         downloaded = [r for r in res if r is not None]
@@ -257,11 +379,6 @@ async def image_downloader(logo_urls: List[Dict[str, str]], output_file_path="")
 
         return downloaded
     
-
-# if not content.startswith(b'\x89PNG') and not content.startswith(b'\xff\xd8'):
-#     print("Response isn't an image.")
-#     return None
-#  implement? some sites return placeholders with res.status(200)
 
         
 

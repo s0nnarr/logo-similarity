@@ -156,8 +156,71 @@ class ImageAnalyzer:
         with open(output_file, "w") as f:
             json.dump(result, f, indent=2)
 
+    def calculate_similarity(self, features1: Dict[str, Any], features2: Dict[str, Any]) -> float:
+        """
+        Calculates similarity between two feature dictionaries.
+        """
 
-    # def calculate_similarity(self, features1: Dict[str, Any], features2: Dict[str, Any]) -> float:
+        if not features1 or features2:
+            return 0.0
+        
+        similarities = []
+        color_sim = cv2.compareHist(features1["color_hist"], features2["color_hist"], cv2.HISTCMP_CORREL)
+        similarities.append(max(0, color_sim))
+
+        # We append max(0, sim) to ensure there are no negative values.
+
+        grayscale_sim = cv2.comparehist(features1["color_hist"], features2["color_hist", cv2.HISTCMP_CORREL])
+        similarities.append(max(0, grayscale_sim))
+
+        shape_features1 = [features1["avg_area"], features1["avg_perimeter"], features1["avg_circularity"]]
+        shape_features2 = [features2["avg_area"], features2["avg_perimeter"], features2["avg_circularity"]]
+
+        if max(shape_features1 + shape_features2) > 0:
+            max_val = max(shape_features1 + shape_features2)
+            shape_features1 = [f / max_val for f in shape_features1]
+            shape_features2 = [f / max_val for f in shape_features2]
+
+            shape_sim = 1 - np.linalg.norm(np.array(shape_features1) - np.array(shape_features2)) / np.sqrt(len(shape_features1))
+            similarities.append(max(0, shape_sim))
+
+        hu_sim = 1 - np.linalg.norm(features1["hu_moments"] - features2["hu_moments"]) / np.sqrt(len(features1["hu_moments"]))
+        similarities.append(max(0, hu_sim))
+
+        aspect_diff = abs(features1["aspect_ratio"] - features2["aspect_ratio"])
+        aspect_sim = 1 / (1 + aspect_diff)
+        similarities.append(aspect_sim)
+
+        fill_diff = abs(features1["fill_ratio"] - features2["fill_ratio"])
+        fill_sim = 1 - fill_diff 
+        similarities.append(max(0, fill_sim))
+
+        line_count_diff = abs(features1["num_lines"] - features2["num_lines"])
+        line_count_sim = 1 / (1 + line_count_diff * 0.1)
+        similarities.append(line_count_sim)
+
+        color_diff = np.linalg.norm(features1["avg_color"] - features2["avg_color"])
+        color_avg_sim = 1 / (1 + color_diff / 255) # Normalize by using max color value 
+        similarities.append(color_avg_sim)
+
+        weights = [
+            0.25, # Color histogram
+            0.15, # Grayscale histogram
+            0.15, # Shapes (perimeter, area, circularity)
+            0.15, # Number of lines
+            0.1,  # Hu moments
+            0.05, # Aspect ratio
+            0.05, # Fill ratio
+            0.1,  # Average color.
+        ]
+
+        # Prioritizing color, histograms and shapes.
+        weighted_sim = sum(w * s for w, s in zip(weights, similarities))
+        return min(1.0, max(0.0, weighted_sim))
+
+    # def build_sim_matrix(self) -> np.ndarray:
+
+
 
 
 """

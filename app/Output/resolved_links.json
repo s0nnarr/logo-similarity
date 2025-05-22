@@ -66,7 +66,7 @@
   },
   {
     "domain": "zalando.cz",
-    "resolved_ip": "3.160.246.128",
+    "resolved_ip": "3.160.246.67",
     "status": "success"
   },
   {
@@ -91,7 +91,7 @@
   },
   {
     "domain": "lidl.com.cy",
-    "resolved_ip": "23.197.129.33",
+    "resolved_ip": "23.212.215.195",
     "status": "success"
   },
   {
@@ -126,7 +126,7 @@
   },
   {
     "domain": "affidea.ba",
-    "resolved_ip": "15.160.73.215",
+    "resolved_ip": "15.161.156.80",
     "status": "success"
   },
   {
@@ -196,7 +196,7 @@
   },
   {
     "domain": "pirtek.be",
-    "resolved_ip": "104.21.50.160",
+    "resolved_ip": "172.67.164.36",
     "status": "success"
   },
   {
@@ -221,7 +221,7 @@
   },
   {
     "domain": "allianz.nl",
-    "resolved_ip": "104.18.171.67",
+    "resolved_ip": "104.18.170.67",
     "status": "success"
   },
   {
@@ -291,7 +291,7 @@
   },
   {
     "domain": "linde-gas.fi",
-    "resolved_ip": "23.36.162.205",
+    "resolved_ip": "95.100.110.2",
     "status": "success"
   },
   {
@@ -301,7 +301,7 @@
   },
   {
     "domain": "svnefird.com",
-    "resolved_ip": "34.149.120.3",
+    "resolved_ip": "35.244.153.44",
     "status": "success"
   },
   {
@@ -331,7 +331,7 @@
   },
   {
     "domain": "mazdaofamarillo.com",
-    "resolved_ip": "151.101.1.191",
+    "resolved_ip": "151.101.65.191",
     "status": "success"
   },
   {
@@ -351,7 +351,7 @@
   },
   {
     "domain": "kapanfastigheter.se",
-    "resolved_ip": "104.21.96.1",
+    "resolved_ip": "104.21.64.1",
     "status": "success"
   },
   {
@@ -376,7 +376,7 @@
   },
   {
     "domain": "linexps.com",
-    "resolved_ip": "198.185.159.144",
+    "resolved_ip": "198.49.23.145",
     "status": "success"
   },
   {
@@ -396,7 +396,7 @@
   },
   {
     "domain": "linde-gas.at",
-    "resolved_ip": "23.36.162.212",
+    "resolved_ip": "95.100.110.25",
     "status": "success"
   },
   {
@@ -456,7 +456,7 @@
   },
   {
     "domain": "zalando.dk",
-    "resolved_ip": "3.160.246.31",
+    "resolved_ip": "3.160.246.67",
     "status": "success"
   },
   {
@@ -466,7 +466,7 @@
   },
   {
     "domain": "crocs.co.id",
-    "resolved_ip": "151.101.1.91",
+    "resolved_ip": "151.101.193.91",
     "status": "success"
   },
   {
@@ -506,7 +506,7 @@
   },
   {
     "domain": "webster.nl",
-    "resolved_ip": "3.209.26.193",
+    "resolved_ip": "34.236.193.193",
     "status": "success"
   },
   {
@@ -536,7 +536,7 @@
   },
   {
     "domain": "linde-electronics.com",
-    "resolved_ip": "23.36.162.223",
+    "resolved_ip": "104.126.37.123",
     "status": "success"
   },
   {
@@ -551,7 +551,7 @@
   },
   {
     "domain": "subaru.jp",
-    "resolved_ip": "23.45.99.91",
+    "resolved_ip": "184.25.80.49",
     "status": "success"
   },
   {
@@ -576,7 +576,7 @@
   },
   {
     "domain": "tbwa.co.za",
-    "resolved_ip": "23.36.162.217",
+    "resolved_ip": "104.126.37.155",
     "status": "success"
   },
   {
@@ -586,7 +586,7 @@
   },
   {
     "domain": "engie.pt",
-    "resolved_ip": "13.69.68.31",
+    "resolved_ip": "23.100.1.29",
     "status": "success"
   },
   {
@@ -656,7 +656,7 @@
   },
   {
     "domain": "nutriciababy.be",
-    "resolved_ip": "151.101.195.10",
+    "resolved_ip": "151.101.131.10",
     "status": "success"
   },
   {
@@ -681,12 +681,12 @@
   },
   {
     "domain": "inductotherm.co.kr",
-    "resolved_ip": "141.193.213.10",
+    "resolved_ip": "141.193.213.11",
     "status": "success"
   },
   {
     "domain": "adecco.cl",
-    "resolved_ip": "20.107.224.10",
+    "resolved_ip": "20.105.232.2",
     "status": "success"
   },
   {
@@ -741,17 +741,17 @@
   },
   {
     "domain": "linde-finance.com",
-    "resolved_ip": "104.102.56.132",
+    "resolved_ip": "23.197.136.124",
     "status": "success"
   },
   {
     "domain": "linde.pe",
-    "resolved_ip": "23.50.131.140",
+    "resolved_ip": "2.17.100.211",
     "status": "success"
   },
   {
     "domain": "narscosmetics.es",
-    "resolved_ip": "151.101.131.52",
+    "resolved_ip": "151.101.3.52",
     "status": "success"
   },
   {
@@ -771,7 +771,7 @@
   },
   {
     "domain": "ikea.com.hk",
-    "resolved_ip": "13.35.58.62",
+    "resolved_ip": "13.35.58.25",
     "status": "success"
   },
   {
@@ -801,12 +801,12 @@
   },
   {
     "domain": "sephora.pl",
-    "resolved_ip": "92.123.103.58",
+    "resolved_ip": "92.123.103.81",
     "status": "success"
   },
   {
     "domain": "daikin-ksa.com",
-    "resolved_ip": "151.101.3.10",
+    "resolved_ip": "151.101.67.10",
     "status": "success"
   },
   {
@@ -840,11 +840,6 @@
     "status": "success"
   },
   {
-    "domain": "linak.nl",
-    "resolved_ip": "23.32.242.7",
-    "status": "success"
-  },
-  {
     "domain": "taylorfarmsdeli.com",
     "resolved_ip": "34.75.166.125",
     "status": "success"
@@ -861,7 +856,7 @@
   },
   {
     "domain": "chip.pl",
-    "resolved_ip": "104.26.15.67",
+    "resolved_ip": "104.26.14.67",
     "status": "success"
   },
   {
@@ -901,7 +896,7 @@
   },
   {
     "domain": "zktecoma.com",
-    "resolved_ip": "104.21.45.131",
+    "resolved_ip": "172.67.214.163",
     "status": "success"
   },
   {
@@ -916,7 +911,7 @@
   },
   {
     "domain": "lidl.lt",
-    "resolved_ip": "23.197.129.33",
+    "resolved_ip": "23.212.215.195",
     "status": "success"
   },
   {
@@ -981,7 +976,7 @@
   },
   {
     "domain": "axabreakdown.co.uk",
-    "resolved_ip": "107.162.136.68",
+    "resolved_ip": "34.149.129.12",
     "status": "success"
   },
   {
