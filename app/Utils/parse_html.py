@@ -20,7 +20,7 @@ class LogoExtractor:
         }
     
         self.blacklisted_keywords = {
-            "background": -2, "banner": -2, "hero": -3, "product": -1, 
+            "background": -4, "banner": -2, "hero": -3, "product": -1, 
             "footer": -1, "sample": -2, "carousel": -2, "slide": -1,
             "thumbnail": -2, "avatar": -2, "profile": -1, "photo": -1,
             "gallery": -2, "covert": -2, "teaser": -1, "headline": -1
@@ -620,3 +620,4 @@ async def extract_site_logo(res_object: Dict[str, Any]):
     
 
 #https://www.stanbicbank.co.zw/zimbabwe/personal/ways-to-bank/Online-banking -> deal with sketch style logos.
+# add specific href searches that lead to domain's homepage. If href matches the search, then also search any child elements that might have the keywords in the src/class/alt/etc

@@ -1,19 +1,18 @@
 from urllib.parse import urlparse, urljoin
 import urllib.parse
-from PIL import Image 
+from PIL import Image, ImageOps 
 from io import BytesIO
 from typing import List, Dict
 
 from Utils.headers import headers_randomizer
 
-import hashlib
 import aiohttp
 import os
 import asyncio
 import re
 import base64
 import logging
-
+import cairosvg
 
 
 # logging.basicConfig(level=logging.DEBUG)
@@ -78,6 +77,19 @@ def get_img_extension(url: str) -> str:
 
     return ".png"
 
+def resize_with_ar(img: Image.Image, target_size: tuple) -> Image.Image:
+    return ImageOps(img, target_size, method=Image.Resampling.LANCZOS, color=(0,0,0,0) if img.mode == "RGBA" else (255, 255, 255))
+
+def svg_conversion(svg_bytes: bytes, size=(64,64)) -> Image.Image :
+    """
+    Converts SVGs to .PNG.
+    SVGs cannot be converted to perceptual hashes.
+    """
+    
+    png_bytes = cairosvg.svg2png(bytestring=svg_bytes, output_width=size[0], output_height=size[1])
+    img = Image.open(BytesIO(png_bytes)).convert("RGBA")
+    return img
+
 
 async def download_img(logo_href: str, domain: str, session: aiohttp.ClientSession, img_size=(64, 64), output_file_path="", retries=2):
     """
@@ -119,7 +131,6 @@ async def download_img(logo_href: str, domain: str, session: aiohttp.ClientSessi
                     img_data = urllib.parse.unquote_to_bytes(data)
                 
                 filename = f"{domain}.{extension}"
-                img_hash = hashlib.md5(img_data).hexdigest()
                 file_path = os.path.join(output_file_path, filename)
 
                 with open(file_path, "wb") as f:
@@ -128,7 +139,6 @@ async def download_img(logo_href: str, domain: str, session: aiohttp.ClientSessi
                     "domain": domain,
                     "logo_url": logo_url,
                     "size": os.path.getsize(file_path),
-                    "img_hash": img_hash
                 }
 
         except Exception as e:
@@ -171,15 +181,14 @@ async def download_img(logo_href: str, domain: str, session: aiohttp.ClientSessi
             os.makedirs(output_file_path, exist_ok=True)
             try:
                 if extension.lower() == ".svg":
-                    with open(file_path, "wb") as f:
-                        f.write(content)
-                    img_hash = hashlib.md5(content).hexdigest()
+                    # SVG -> PNG
+                    img = svg_conversion(content, size=img_size)
+                    img.save(output_file_path)
                     
                     return {
                         "domain": domain,
                         "logo_url": logo_url,
                         "size": os.path.getsize(file_path),
-                        "img_hash": img_hash
                     }
 
                 else:
@@ -187,23 +196,20 @@ async def download_img(logo_href: str, domain: str, session: aiohttp.ClientSessi
                     img = Image.open(BytesIO(content))
                     if img.mode == "RGBA" or (img.mode == "P" and "transparency" in img.info):
                         img_alpha = img.convert("RGBA")
-                        img_resized = img_alpha.resize(img_size, Image.Resampling.LANCZOS)
+                        img_resized = resize_with_ar(img_alpha, img_size)
                     else:
                         img = img.convert("RGB")
-                        img_resized = img.resize(img_size, Image.Resampling.LANCZOS)
+                        img_resized = resize_with_ar(img, img_size)
 
                     if img_resized.mode == "RGBA" and not file_path.lower().endswith((".png", ".webp")):
                         file_path = os.path.splitext(file_path)[0] + ".png"
-                    # Resizing to 64x64 for compression.
+
                     img_resized.save(file_path)
-                    img_hash = hashlib.md5(img_resized.tobytes()).hexdigest()
-                    # And hashing the resized image for near-duplicate detection.
                 
                 return {
                     "domain": domain,
                     "logo_url": logo_url,
                     "size": os.path.getsize(file_path),
-                    "img_hash": img_hash
                 }
             
             except Exception as err:
