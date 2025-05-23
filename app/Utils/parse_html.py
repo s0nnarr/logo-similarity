@@ -12,7 +12,7 @@ class LogoExtractor:
     def __init__(self):
         self.domains_without_logos = set()
         self.logo_keywords = {
-            "logo": 5, "brand": 4, "logotype": 3, 
+            "logo": 9, "brand": 4, "logotype": 3, 
             "emblem": 2, "trademark": 2, "symbol": 2,
             "site-logo": 4, "site-brand": 3, "site-identity": 2,
             "header-logo": 3, "navbar-brand": 3, "company-logo": 3,
@@ -94,12 +94,14 @@ class LogoExtractor:
                     conf -= 1 
         
         # Considering file extension.
-        if url.endswith('svg'):
+        if url.endswith("svg"):
             conf += 2
-        if url.endswith(('.png', '.webp')):
+        if url.endswith((".png", ".webp")):
             conf += 1
-        elif url.endswith(('.jpg', '.jpeg')):
+        elif url.endswith((".jpg", ".jpeg")):
             conf -= 0.5
+        elif url.endswith(".gif"):
+            conf -= 20 # Forbidding gifs
         
         path_parts = urlparse(url).path.split("/")
         for part in path_parts:
