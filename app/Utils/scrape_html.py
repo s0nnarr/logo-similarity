@@ -35,11 +35,15 @@ async def fetch_and_retry(client: httpx.AsyncClient, domain: str, ip: Optional[s
 
     for attempt in range(max_retries):
         for link in list(next_link):
+            
             if link in visited_links:
                 continue
                 # Skips visited links to avoid redirection loop.
+
             visited_links.add(link)
+
             try:
+
                 headers = headers_randomizer(domain)
                 timeout = httpx.Timeout(20.0, connect=10.0, read=10.0, write=10.0)
                 parsed_link = urlparse(link)
@@ -109,14 +113,14 @@ async def fetch_and_retry(client: httpx.AsyncClient, domain: str, ip: Optional[s
     
     if modified_link and not res_object["success"]:
         print(f"Falling back to headless browser for {modified_link}")
-        res_object = await headless_fetch(modified_link)
+        res_object = await headless_fetch(modified_link, domain)
         # Final attempt with headless browser.
         
     return res_object
 
 _sem_headless = asyncio.Semaphore(3)
 
-async def headless_fetch(url: str) -> dict:
+async def headless_fetch(url: str, domain: str) -> dict:
     result = {
         "domain": url,
         "success": False,
@@ -129,13 +133,37 @@ async def headless_fetch(url: str) -> dict:
         return {}
     browser = None
     context = None
+    headers = headers_randomizer(domain)
 
     try:
         async with _sem_headless:
             async with async_playwright() as p:
-                browser = await p.chromium.launch(headless=True)
-                context = await browser.new_context()
+                browser = await p.chromium.launch(
+                    headless=True,
+                        args=[
+                            "--no-sandbox",
+                            "--disable-blink-features=AutomationControlled",
+                            "--disable-web-security",
+                            "--disable-features=VizDisplayCompositor",
+                            "--disable-dev-shm-usage",
+                            "--no-first-run",
+                            "--disable-extensions"
+                        ]
+                    )
+                
+                context = await browser.new_context(
+                    user_agent=headers["User-Agent"],
+                    viewport={"width": 1920, "height": 1080},
+                    locale="en-US",
+                    timezone_id="America/New_York",
+                    extra_http_headers={
+                        "Accept-Language": "en-US,en;q=0.9",
+                    }
+                )
+
+
                 page = await context.new_page()
+
                 try:
                     res = await page.goto(url, timeout=10000, wait_until="domcontentloaded")
                 
@@ -185,8 +213,8 @@ async def scrape_html(resolved_links: List[Dict[str, Any]]) -> List[Dict[Any, st
     Returns:
         List of dictionaries containing each website's response as an object.
     """
-    concurrency = 200 # Changed from 1000
-    keepalive = 40 # Changed from 300
+    concurrency = 200 
+    keepalive = 40 
 
     if not resolved_links:
         return []

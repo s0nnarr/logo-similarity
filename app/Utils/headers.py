@@ -20,37 +20,38 @@ user_agents = [
     "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
 ]
 
-accept_languages = [
-    "en-US,en;q=0.9",
-    "en-GB,en;q=0.8",
-    "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
-    "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
-    "es-ES,es;q=0.9,en;q=0.8",
-    "it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7",
-    "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
-    "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
-    "ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7",
-    "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
-    "nl-NL,nl;q=0.9,en-US;q=0.8,en;q=0.7",
-    "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
-    "pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7",
-    "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
-    "sv-SE,sv;q=0.9,en-US;q=0.8,en;q=0.7"
-]
+# accept_languages = [ # Can be used to randomize through.
+#     "en-US,en;q=0.9",
+#     "en-GB,en;q=0.8",
+#     "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
+#     "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7",
+#     "es-ES,es;q=0.9,en;q=0.8",
+#     "it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7",
+#     "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+#     "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+#     "ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7",
+#     "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+#     "nl-NL,nl;q=0.9,en-US;q=0.8,en;q=0.7",
+#     "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
+#     "pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7",
+#     "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+#     "sv-SE,sv;q=0.9,en-US;q=0.8,en;q=0.7"
+# ]
 
 
 def headers_randomizer(domain: str) -> Dict[str, str]:
     return {
         "User-Agent": random.choice(user_agents),
         "Accept": "image/avif,image/jpeg,image/jpg,image/png,image/apng,image/gif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
-        "Accept-Language": random.choice(accept_languages),
+        "Accept-Language": "en-US,en;q=0.9",
         "Accept-Encoding": "gzip, deflate, br",
-        "Referer": f"https://{domain}",
+        "DNT": "1",
+        "Referer": f"https://www.google.com/search?q={domain}",
         "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
         "Sec-Fetch-Dest": "document",
         "Sec-Fetch-Mode": "navigate",
         "Sec-Fetch-Site": "none",
         "Sec-Fetch-User": "?1",
-        "Pragma": "no-cache",
-        "Cache-control": "no-cache"
+        "Cache-control": "max-age=0"
     }

@@ -8,8 +8,7 @@ from scipy.spatial.distance import pdist, squareform
 from typing import List, Dict, Tuple, Any, Set
 from pathlib import Path
 import json
-import imagehash
-from config import OUTPUT_PATH as _default_output_dir
+from config import OUTPUT_PATH
 
 
 
@@ -19,7 +18,7 @@ class ImageAnalyzer:
     This groups logos by similarities, using traditional computer vision algorithms.
     """
     
-    def __init__(self, input_dir: str = ".", threshold: float = 0.75, output_dir: str = _default_output_dir):
+    def __init__(self, input_dir: str = ".", threshold: float = 0.75, output_dir: str = OUTPUT_PATH):
         """
         Params:
             input_dir: Location where the images have been downloaded by the scraper.
@@ -32,7 +31,7 @@ class ImageAnalyzer:
         self.input_dir = Path(input_dir)
         self.output_dir = Path(output_dir)
         self.threshold = threshold
-        self.logos = [] # (path, features) tuples
+        self.logos = [] # (path, features)
         self.similarity_graph = None 
         self.logo_groups = []
 
@@ -53,16 +52,9 @@ class ImageAnalyzer:
                 if file_path.suffix.lower() in self.img_extensions:
                     logo_files.append(file_path)
     
-        print(f"[ImageAnalyzer] Found {len(logo_files)} potential logos.")
+        print(f"Found {len(logo_files)} potential logos.")
         return logo_files
     
-    def hash_checker(self, path1, path2, threshold=5):
-        # Lower threshold to be more strict.
-        hash1 = imagehash.phash(Image.open(path1))
-        hash2 = imagehash.phash(Image.open(path2))
-
-        diff = abs(hash1 - hash2)
-        return diff <= threshold
     
     def extract_features(self, img_path: str) -> Dict[str, Any]:
         """
@@ -96,7 +88,7 @@ class ImageAnalyzer:
             contour_features = []
             for contour in contours:
                 if len(contour) >= 5: 
-                    # Checking for an ellipse. 
+                    # Checking for an ellipse / circular shape. 
                     # Needs at least 5 points to fit inside an ellipse.
                     area = cv2.contourArea(contour)
                     if area > 50:
@@ -330,7 +322,7 @@ class ImageAnalyzer:
         for i, group in enumerate(groups):
             group_info.append({
                 "group_num": i,
-                "domain": [self.logos[logo][0].name for logo in group]
+                "domains": [os.path.splitext(self.logos[logo][0].name)[0] for logo in group]
             })
         return group_info
 

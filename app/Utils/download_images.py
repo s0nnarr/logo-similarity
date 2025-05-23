@@ -115,7 +115,27 @@ def resize_with_ar(img: Image.Image, target_size: tuple) -> Image.Image:
         print(f"Error resizing the image. ERR: {err}")
         return img
 
+def filename_sanitizer(domain: str) -> str:
+
+    """
+    Sanitizing domain name for a safer use.
+    """
+
+    if domain.startswith(("https://", "http://")):
+        parsed = urlparse(domain)
+        domain = parsed.netloc 
+    invalid_chars = r'[<>:"/\\|?*\s]'
+    sanitized_filename = re.sub(invalid_chars, "_", domain)
+    sanitized_filename = sanitized_filename.strip("._")
+    if not sanitized_filename:
+        sanitized_filename = "unknown"
+    if len(sanitized_filename) >= 100:
+        sanitized_filename = sanitized_filename[:100]
+    return sanitized_filename
+
+
 def svg_conversion(svg_bytes: bytes, size=(128, 128)) -> bytes :
+
     """
     Converts SVGs to .PNG.
     SVGs cannot be converted to perceptual hashes.
@@ -216,6 +236,8 @@ async def download_img(logo_href: str, domain: str, session: aiohttp.ClientSessi
     """
         Image downloader logic.
     """
+    sanitized_domain = filename_sanitizer(domain)
+
 
     try:
         logo_url = resolve_logo_url(domain, logo_href)
@@ -223,7 +245,7 @@ async def download_img(logo_href: str, domain: str, session: aiohttp.ClientSessi
             return None
             
         extension = get_img_extension(logo_url)
-        filename = f"{domain}{extension}"
+        filename = f"{sanitized_domain}{extension}"
         file_path = os.path.join(output_file_path, filename)
         
         # Handle inline SVG
@@ -234,7 +256,8 @@ async def download_img(logo_href: str, domain: str, session: aiohttp.ClientSessi
                 png_bytes = svg_conversion(svg_bytes, img_size)
                 img = Image.open(BytesIO(png_bytes))
                 img_resized = resize_with_ar(img, img_size)
-                filename = f"{domain}.png"
+
+                filename = f"{sanitized_domain}.png"
                 file_path = os.path.join(output_file_path, filename)
                 
                 os.makedirs(output_file_path, exist_ok=True)
@@ -265,13 +288,13 @@ async def download_img(logo_href: str, domain: str, session: aiohttp.ClientSessi
                 if img_data is None:
                     return None
                 
-                filename = f"{domain}.{extension}"
+                filename = f"{sanitized_domain}.{extension}"
                 file_path = os.path.join(output_file_path, filename)
                 os.makedirs(output_file_path, exist_ok=True)
 
                 if extension.lower() == "svg":
                     png_bytes = svg_conversion(img_data, size=img_size)
-                    filename = f"{domain}.png"
+                    filename = f"{sanitized_domain}.png"
                     file_path = os.path.join(output_file_path, filename)
                     with open(file_path, "wb") as f:
                         f.write(png_bytes)
@@ -280,7 +303,7 @@ async def download_img(logo_href: str, domain: str, session: aiohttp.ClientSessi
                     img_resized = resize_with_ar(img, img_size)
 
                     if img_resized.mode == "RGBA" and not filename.lower().endswith((".png", ".webp")):
-                        filename = f"{domain}.png"
+                        filename = f"{sanitized_domain}.png"
                         file_path = os.path.join(output_file_path, filename)
                     img_resized.save(file_path)
 
@@ -355,7 +378,7 @@ async def image_downloader(logo_urls: List[Dict[str, str]], output_file_path="")
     print(f"\nDownloading {len(logo_urls)} images...\n")
 
     os.makedirs(output_file_path, exist_ok=True)
-    batch_size = 25  
+    batch_size = 100 
     
     connector = aiohttp.TCPConnector(
         limit=15,  

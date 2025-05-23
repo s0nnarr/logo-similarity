@@ -5,6 +5,4 @@ __pycache__/
 .env
 *.DS_Store
 .gitignore
-*.json
-Images
 venv

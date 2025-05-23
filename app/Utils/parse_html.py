@@ -439,7 +439,7 @@ class LogoExtractor:
                     continue
 
                 try:
-                    decoder = json.JSONDecoder()
+                    decoder = json.JSONDecoder(strict=False)
                     schema_data, _ = decoder.raw_decode(raw_json.strip())
                 except (json.decoder.JSONDecodeError, AttributeError) as err:
                     print(f"Error parsing schema data. ERR: {err}")
