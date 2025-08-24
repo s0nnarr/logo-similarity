@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a project provides a robust solution for logo similarity detection using classic computer vision algorithms for the similarity calculation, format support. It is primarily designed for large datasets. Will add image preprocessing for better results (as traditional computer vision algorithms are more sensible to noise and variations). 
+This project provides a robust solution for logo similarity detection using classic computer vision algorithms for the similarity calculation, format support. It is primarily designed for large datasets. Will add image preprocessing for better results (as traditional computer vision algorithms are more sensible to noise and variations). 
 
 The challenge was to avoid machine-learning algorithms (K-means or DBSCAN).
 
